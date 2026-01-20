@@ -1,5 +1,5 @@
 
-const logicUrl = 'https://cdn.jsdelivr.net/gh/sisisisilviaxie-star/st-scripts@main/greeting.js';
+const logicUrl = 'https://cdn.jsdelivr.net/gh/sisisisilviaxie-star/st-scripts@v3/greeting.js';
 
 import(logicUrl + '?t=' + Date.now())
     .then(() => {
