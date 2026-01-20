@@ -1,6 +1,6 @@
 //name: 开场白管理器
-//description: V2.0
-//author: Yellows
+//description:V3.0
+//author: Yellows 
 
 (function() {
     // === 0. 配置常量 ===
@@ -8,16 +8,16 @@
     let saveTimeout = null;
 
     // === 1. 样式 ===
-    const STYLE_ID = 'greeting-jumper-css-v2-2'; 
+    const STYLE_ID = 'greeting-jumper-css-v3-3'; 
     $('[id^=greeting-jumper-css]').remove();
 
     $('head').append(`
         <style id="${STYLE_ID}">
-            /* 通用设置 - 弹窗全屏化 */
+            /* 通用设置 */
             .swal2-popup { 
                 width: 98% !important; 
                 max-width: 1600px !important; 
-                height: 95vh !important; /* 1. 弹窗高度最大化 */
+                height: 95vh !important;
                 padding: 0 !important; 
                 border-radius: 8px !important; 
                 display: flex !important; 
@@ -37,43 +37,29 @@
                 background: var(--smart-theme-bg); position: relative;
             }
             
-            /* === 顶部控制区 === */
+            /* 顶部控制区 */
             .gj-header-wrapper {
                 flex-shrink: 0; background: var(--smart-theme-content-bg);
                 border-bottom: 1px solid var(--smart-theme-border-color-1);
                 display: flex; flex-direction: column;
             }
-            
-            /* 第一行 */
             .gj-header-row-1 {
                 display: flex; justify-content: center; align-items: center;
                 padding: 12px 15px; border-bottom: 1px solid rgba(0,0,0,0.05); 
-                position: relative; /* 关键：为绝对定位做参照 */
+                position: relative;
                 min-height: 24px;
             }
-            
-            /* 2. 标题 (移除计数) */
             .gj-app-title { font-weight: bold; font-size: 1.2em; color: var(--smart-theme-body-color); }
-
-            /* 2. 自动关闭 (绝对定位最右上角，字号缩小) */
             .gj-auto-close-wrapper {
-                position: absolute; 
-                right: 15px; 
-                top: 50%; 
-                transform: translateY(-50%);
-                display: flex; align-items: center; gap: 4px; 
-                font-size: 0.75em; /* 字号缩小 */
-                opacity: 0.7; 
-                z-index: 10;
+                position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+                display: flex; align-items: center; gap: 4px; font-size: 0.75em; opacity: 0.7; z-index: 10;
             }
             .gj-checkbox-label { cursor: pointer; user-select: none; color: var(--smart-theme-body-color); display: flex; align-items: center; gap: 4px; }
-
-            /* 第二行 */
             .gj-header-row-2 { 
-                display: flex; justify-content: space-between; align-items: center; 
-                padding: 8px 15px; gap: 10px; 
+                display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; gap: 10px; 
             }
             
+            /* 按钮样式 */
             .gj-top-btn {
                 background: transparent; border: 1px solid var(--smart-theme-border-color-2);
                 color: var(--smart-theme-body-color); border-radius: 4px; padding: 6px 12px;
@@ -84,7 +70,6 @@
             .gj-top-btn i { color: #7a9a83; }
 
             .gj-icon-group { display: flex; gap: 5px; }
-            /* 3. 纯图标按钮 (去除丑陋边框) */
             .gj-icon-btn {
                 background: transparent; border: none; color: var(--smart-theme-body-color);
                 width: 34px; height: 34px; border-radius: 4px; display: flex; align-items: center; justify-content: center;
@@ -92,10 +77,35 @@
             }
             .gj-icon-btn:hover { background: rgba(0,0,0,0.05); opacity: 1; transform: scale(1.1); color: #7a9a83; }
 
-            /* === 滚动区域 === */
-            .gj-scroll-area { flex-grow: 1; overflow-y: auto; padding: 10px 8px 120px 8px; }
+            /* 列表区域 */
+            .gj-scroll-area { flex-grow: 1; overflow-y: auto; padding: 10px 8px 10px 8px; scroll-behavior: smooth; }
+            
+            /* 主界面底部关闭栏 */
+            .gj-main-footer {
+                flex-shrink: 0;
+                padding: 10px;
+                background: var(--smart-theme-content-bg);
+                border-top: 1px solid var(--smart-theme-border-color-1);
+                display: flex;
+                justify-content: center;
+            }
+            .gj-main-close-btn {
+                width: 100%;
+                max-width: 400px;
+                padding: 10px;
+                border: 1px solid var(--smart-theme-border-color-2);
+                background: transparent;
+                color: var(--smart-theme-body-color);
+                border-radius: 6px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .gj-main-close-btn:hover {
+                background: rgba(0,0,0,0.05);
+                border-color: var(--smart-theme-border-color-1);
+            }
 
-            /* === 卡片主体 === */
             .gj-card {
                 background: var(--smart-theme-content-bg);
                 border: 1px solid var(--smart-theme-border-color-1);
@@ -103,119 +113,46 @@
                 display: flex; flex-direction: column; flex-shrink: 0;
                 box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s;
             }
-            .gj-card.active { 
-                background: rgba(122, 154, 131, 0.05) !important;
-                border-left: 4px solid #7a9a83; 
-            }
-
-            .gj-card-header-main {
-                display: flex; align-items: flex-start; padding: 10px; gap: 10px; min-height: 30px;
-            }
-            .gj-card.editing .gj-card-header-main {
-                border-bottom: 1px solid var(--smart-theme-border-color-1);
-                background: rgba(0,0,0,0.02);
-            }
-
-            .gj-btn-max {
-                color: var(--smart-theme-body-color); opacity: 0.4; cursor: pointer;
-                background: transparent; border: none; padding: 2px; font-size: 0.9em; flex-shrink: 0; margin-top: 3px;
-            }
+            .gj-card.active { background: rgba(122, 154, 131, 0.05) !important; border-left: 4px solid #7a9a83; }
+            .gj-card-header-main { display: flex; align-items: flex-start; padding: 10px; gap: 10px; min-height: 30px; }
+            .gj-card.editing .gj-card-header-main { border-bottom: 1px solid var(--smart-theme-border-color-1); background: rgba(0,0,0,0.02); }
+            .gj-btn-max { color: var(--smart-theme-body-color); opacity: 0.4; cursor: pointer; background: transparent; border: none; padding: 2px; font-size: 0.9em; flex-shrink: 0; margin-top: 3px; }
             .gj-btn-max:hover { opacity: 1; color: #7a9a83; transform: scale(1.1); }
-
-            .gj-title-area { 
-                flex-grow: 1; display: block; word-break: break-all; white-space: normal; line-height: 1.4;
-            }
+            .gj-title-area { flex-grow: 1; display: block; word-break: break-all; white-space: normal; line-height: 1.4; }
             .gj-title-main { font-weight: bold; font-size: 1.05em; color: var(--smart-theme-body-color); margin-right: 6px; }
             .gj-title-sub { font-size: 0.9em; color: var(--smart-theme-body-color); opacity: 0.7; }
-
             .gj-header-right { margin-left: auto; flex-shrink: 0; }
-            
-            .gj-btn-edit-toggle {
-                border: 1px solid transparent; background: transparent;
-                color: var(--smart-theme-body-color); border-radius: 4px; padding: 4px 10px;
-                cursor: pointer; font-size: 0.9em; opacity: 0.6; display: flex; align-items: center; gap: 5px;
-            }
+            .gj-btn-edit-toggle { border: 1px solid transparent; background: transparent; color: var(--smart-theme-body-color); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.9em; opacity: 0.6; display: flex; align-items: center; gap: 5px; }
             .gj-btn-edit-toggle:hover { opacity: 1; background: rgba(0,0,0,0.05); }
-            .gj-card.editing .gj-btn-edit-toggle { 
-                background: #7a9a83; color: white; opacity: 1; border-color: #7a9a83; font-weight: bold;
-            }
-
-            .gj-card-header-tools {
-                display: none; flex-direction: column; padding: 8px 10px; gap: 8px;
-                background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--smart-theme-border-color-1);
-            }
+            .gj-card.editing .gj-btn-edit-toggle { background: #7a9a83; color: white; opacity: 1; border-color: #7a9a83; font-weight: bold; }
+            .gj-card-header-tools { display: none; flex-direction: column; padding: 8px 10px; gap: 8px; background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--smart-theme-border-color-1); }
             .gj-card.editing .gj-card-header-tools { display: flex; }
-
-            .gj-subtitle-input {
-                width: 100%; height: 32px; box-sizing: border-box;
-                background: var(--smart-theme-bg); border: 1px solid var(--smart-theme-border-color-1);
-                color: var(--smart-theme-body-color); padding: 0 8px; border-radius: 4px; font-size: 0.9em;
-            }
-            
+            .gj-subtitle-input { width: 100%; height: 32px; box-sizing: border-box; background: var(--smart-theme-bg); border: 1px solid var(--smart-theme-border-color-1); color: var(--smart-theme-body-color); padding: 0 8px; border-radius: 4px; font-size: 0.9em; }
             .gj-tools-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-            
-            .gj-btn-new-item {
-                background: transparent; border: 1px dashed var(--smart-theme-border-color-2);
-                color: #7a9a83; border-radius: 4px; padding: 4px 10px; font-size: 0.85em;
-                cursor: pointer; display: flex; align-items: center; gap: 6px; opacity: 0.9;
-            }
+            .gj-btn-new-item { background: transparent; border: 1px dashed var(--smart-theme-border-color-2); color: #7a9a83; border-radius: 4px; padding: 4px 10px; font-size: 0.85em; cursor: pointer; display: flex; align-items: center; gap: 6px; opacity: 0.9; }
             .gj-btn-new-item:hover { background: rgba(122, 154, 131, 0.1); opacity: 1; border-color: #7a9a83; }
-
             .gj-tools-right { display: flex; gap: 5px; }
-            .gj-action-btn {
-                width: 28px; height: 28px; border: 1px solid var(--smart-theme-border-color-1);
-                background: var(--smart-theme-bg); color: var(--smart-theme-body-color);
-                border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-                opacity: 0.7; font-size: 0.85em;
-            }
+            .gj-action-btn { width: 28px; height: 28px; border: 1px solid var(--smart-theme-border-color-1); background: var(--smart-theme-bg); color: var(--smart-theme-body-color); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.7; font-size: 0.85em; }
             .gj-action-btn:hover { opacity: 1; transform: translateY(-1px); }
             .gj-action-btn.del:hover { color: #ff6b6b; border-color: #ff6b6b; }
-
             .gj-card-body { padding: 0; display: flex; flex-direction: column; }
-            .gj-textarea {
-                width: 100%; min-height: 80px; height: 100px; resize: vertical; border: none;
-                background: transparent; padding: 10px;
-                color: var(--smart-theme-body-color); font-family: inherit; font-size: 0.95em; line-height: 1.5;
-                box-sizing: border-box; outline: none; transition: height 0.2s;
-            }
+            .gj-textarea { width: 100%; min-height: 80px; height: 100px; resize: vertical; border: none; background: transparent; padding: 10px; color: var(--smart-theme-body-color); font-family: inherit; font-size: 0.95em; line-height: 1.5; box-sizing: border-box; outline: none; transition: height 0.2s; }
             .gj-textarea.expanded { height: 400px !important; }
-            
             .gj-textarea[readonly] { opacity: 0.8; cursor: default; }
             .gj-textarea:not([readonly]) { background: var(--smart-theme-input-bg); }
-
-            .gj-expand-bar {
-                width: 100%; text-align: center; background: rgba(0,0,0,0.03);
-                border-top: 1px solid var(--smart-theme-border-color-1);
-                color: var(--smart-theme-body-color); font-size: 0.8em; padding: 2px 0;
-                cursor: pointer; opacity: 0.6; transition: all 0.2s;
-            }
+            .gj-expand-bar { width: 100%; text-align: center; background: rgba(0,0,0,0.03); border-top: 1px solid var(--smart-theme-border-color-1); color: var(--smart-theme-body-color); font-size: 0.8em; padding: 2px 0; cursor: pointer; opacity: 0.6; transition: all 0.2s; }
             .gj-expand-bar:hover { opacity: 1; background: rgba(0,0,0,0.08); }
-
             .gj-footer { display: flex; gap: 10px; padding: 10px; border-top: 1px solid var(--smart-theme-border-color-1); }
-            .gj-footer-btn {
-                border-radius: 4px; font-weight: bold; font-size: 0.9em; padding: 8px 0;
-                cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
-                transition: all 0.2s; height: 36px;
-            }
-            
-            .gj-footer-btn.insert {
-                flex: 4; background: transparent; border: 1px solid var(--smart-theme-border-color-2);
-                color: var(--smart-theme-body-color); opacity: 0.8;
-            }
+            .gj-footer-btn { border-radius: 4px; font-weight: bold; font-size: 0.9em; padding: 8px 0; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; height: 36px; }
+            .gj-footer-btn.insert { flex: 4; background: transparent; border: 1px solid var(--smart-theme-border-color-2); color: var(--smart-theme-body-color); opacity: 0.8; }
             .gj-footer-btn.insert:hover { background: rgba(0,0,0,0.03); opacity: 1; border-color: var(--smart-theme-body-color); }
-            
-            .gj-footer-btn.switch {
-                flex: 6; background: transparent; border: 1px solid var(--smart-theme-border-color-2);
-                color: var(--smart-theme-body-color); opacity: 0.9;
-            }
+            .gj-footer-btn.switch { flex: 6; background: transparent; border: 1px solid var(--smart-theme-border-color-2); color: var(--smart-theme-body-color); opacity: 0.9; }
             .gj-footer-btn.switch:hover { border-color: #7a9a83; color: #7a9a83; background: rgba(122, 154, 131, 0.05); }
-            
-            .gj-footer-btn.active { 
-                background: #7a9a83; color: white; border: none; cursor: default; opacity: 1; pointer-events: none; 
-            }
+            .gj-footer-btn.active { background: #7a9a83; color: white; border: none; cursor: default; opacity: 1; pointer-events: none; }
 
-            .gj-fullscreen-editor { display: flex; flex-direction: column; height: 100%; width: 100%; background: var(--smart-theme-bg); }
-            .gj-fs-header { padding: 8px 12px; background: var(--smart-theme-content-bg); border-bottom: 1px solid var(--smart-theme-border-color-1); display: flex; flex-direction: column; gap: 6px; transition: all 0.2s; }
+            /* 全屏编辑器 & 搜索高亮 */
+            .gj-fullscreen-editor { display: flex; flex-direction: column; height: 100%; width: 100%; background: var(--smart-theme-bg); position: relative; }
+            .gj-fs-header { padding: 8px 12px; background: var(--smart-theme-content-bg); border-bottom: 1px solid var(--smart-theme-border-color-1); display: flex; flex-direction: column; gap: 6px; transition: all 0.2s; flex-shrink: 0; }
             .gj-fs-header.collapsed .gj-fs-tools-container { display: none; }
             .gj-fs-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
             .gj-fs-title-input { flex-grow: 1; background: transparent; border: 1px solid transparent; font-weight: bold; font-size: 1.05em; color: var(--smart-theme-body-color); padding: 4px; border-radius: 4px; }
@@ -229,20 +166,23 @@
             .gj-fs-btn:hover { background: var(--smart-theme-border-color-1); }
             .gj-fs-btn.replace { color: #e6a23c; border-color: #e6a23c; background: rgba(230,162,60,0.1); }
             .gj-fs-btn.replace:hover { background: #e6a23c; color: white; }
-            .gj-fullscreen-textarea { flex-grow: 1; padding: 15px; font-size: 1.1em; line-height: 1.6; background: var(--smart-theme-bg); color: var(--smart-theme-body-color); border: none; outline: none; resize: none; padding-bottom: 50vh; }
+            .gj-fs-textarea-wrapper { flex-grow: 1; position: relative; overflow: hidden; display: flex; }
+            /* V3.2 Fix 4: 增加底部 padding，确保底部搜索内容可视 */
+            .gj-fullscreen-textarea { flex-grow: 1; padding: 15px; padding-bottom: 35vh; font-size: 1.1em; line-height: 1.6; background: var(--smart-theme-bg); color: var(--smart-theme-body-color); border: none; outline: none; resize: none; width: 100%; height: 100%; box-sizing: border-box; }
 
-            .gj-parse-container { display: flex; flex-direction: column; height: 100%; text-align: left; padding-bottom: 10px; box-sizing: border-box; }
-            .gj-tabs-header { display: flex; border-bottom: 1px solid var(--smart-theme-border-color-1); margin-bottom: 10px; }
+            /* 目录导入/导出 */
+            .gj-parse-container { display: flex; flex-direction: column; height: 100%; min-height: 400px; text-align: left; padding-bottom: 10px; box-sizing: border-box; }
+            .gj-tabs-header { display: flex; border-bottom: 1px solid var(--smart-theme-border-color-1); margin-bottom: 10px; flex-shrink: 0; }
             .gj-tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; font-weight: bold; opacity: 0.7; border-bottom: 3px solid transparent; transition: all 0.2s; }
             .gj-tab:hover { opacity: 1; background: rgba(0,0,0,0.02); }
             .gj-tab.active { opacity: 1; color: #7a9a83; border-bottom-color: #7a9a83; }
-            .gj-tab-content { display: none; flex-direction: column; flex-grow: 1; }
+            .gj-tab-content { display: none; flex-direction: column; flex-grow: 1; overflow: hidden; }
             .gj-tab-content.active { display: flex; }
-            .gj-parse-textarea-wrapper { flex-grow: 1; display: flex; flex-direction: column; margin-top: 5px; }
+            .gj-parse-textarea-wrapper { flex-grow: 1; display: flex; flex-direction: column; margin-top: 5px; height: 100%; overflow: hidden; }
             .gj-parse-textarea { flex-grow: 1; width: 100%; resize: none; padding: 10px; background: var(--smart-theme-input-bg); border: 1px solid var(--smart-theme-border-color-1); color: var(--smart-theme-body-color); border-radius: 4px; font-size: 0.95em; outline: none; }
             .gj-parse-textarea:focus { border-color: #7a9a83; }
-            .gj-parse-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-            .gj-parse-hint { font-size: 0.9em; opacity: 0.8; font-weight: bold; }
+            .gj-parse-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-shrink: 0; }
+            .gj-parse-hint { font-size: 0.95em; opacity: 0.9; font-weight: bold; }
             .gj-parse-preview-header { display: flex; justify-content: space-between; align-items: center; padding: 5px 0 10px 0; border-bottom: 1px solid var(--smart-theme-border-color-1); margin-bottom: 5px; flex-shrink: 0; }
             .gj-parse-info { font-size: 0.95em; }
             .gj-parse-start-select-group { display: flex; align-items: center; gap: 5px; font-size: 0.85em; }
@@ -251,17 +191,31 @@
             .gj-parse-item { display: flex; gap: 8px; padding: 8px; border-bottom: 1px solid var(--smart-theme-border-color-1); align-items: flex-start; background: var(--smart-theme-content-bg); margin-bottom: 4px; border-radius: 4px; }
             .gj-parse-row-select { background: #7a9a83; color: white; padding: 4px 2px; border-radius: 3px; border: 1px solid transparent; font-size: 0.8em; white-space: nowrap; font-weight: bold; margin-top: 2px; cursor: pointer; outline: none; max-width: 90px; }
             .gj-parse-row-select.error { background: #d32f2f; border-color: #ff6b6b; animation: shake 0.3s; }
-            @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-2px); } 50% { transform: translateX(2px); } 100% { transform: translateX(0); } }
             .gj-parse-row-textarea { flex: 1; background: var(--smart-theme-input-bg); border: 1px solid var(--smart-theme-border-color-1); color: var(--smart-theme-body-color); padding: 6px; font-size: 0.95em; border-radius: 4px; resize: vertical; min-height: 42px; line-height: 1.4; }
             .gj-parse-row-textarea:focus { border-color: #7a9a83; outline: none; }
-            .gj-parse-custom-footer { display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: auto; }
-            .gj-custom-btn { padding: 8px 16px; border-radius: 4px; border: 1px solid var(--smart-theme-border-color-2); background: transparent; color: var(--smart-theme-body-color); cursor: pointer; font-size: 0.95em; display: flex; align-items: center; gap: 6px; }
+            .gj-parse-custom-footer { display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: auto; flex-shrink: 0; }
+            
+            .gj-custom-btn { padding: 8px 16px; border-radius: 4px; border: 1px solid var(--smart-theme-border-color-2); background: transparent; color: var(--smart-theme-body-color); cursor: pointer; font-size: 0.95em; display: flex; align-items: center; justify-content: center; gap: 6px; }
             .gj-custom-btn:hover { background: rgba(0,0,0,0.05); }
             .gj-custom-btn.primary { background: #7a9a83; color: white; border: none; }
             .gj-custom-btn.primary:hover { filter: brightness(1.1); }
             .gj-custom-btn.danger { background: #d32f2f; color: white; border: none; }
             .gj-custom-btn.danger:hover { filter: brightness(1.1); }
+            .gj-custom-btn.success { background: #4caf50; color: white; border: none; }
+            .gj-custom-btn.success:hover { filter: brightness(1.1); }
+            
+            .gj-dl-btn { font-size: 0.85em !important; padding: 6px 12px !important; border: 1px solid var(--smart-theme-border-color-2); border-radius: 4px; cursor: pointer; background: rgba(0,0,0,0.05); color: var(--smart-theme-body-color); display: flex; align-items: center; gap: 6px; font-weight: bold; }
+            .gj-dl-btn:hover { background: rgba(0,0,0,0.1); color: #7a9a83; border-color: #7a9a83; }
 
+            /* 进度条弹窗样式 */
+            .gj-progress-popup { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 20px; }
+            .gj-spinner { width: 40px; height: 40px; border: 4px solid rgba(0,0,0,0.1); border-top-color: #7a9a83; border-radius: 50%; animation: gj-spin 1s linear infinite; }
+            @keyframes gj-spin { to { transform: rotate(360deg); } }
+            .gj-progress-text { font-size: 1.2em; font-weight: bold; color: var(--smart-theme-body-color); }
+            .gj-progress-sub { font-size: 0.9em; opacity: 0.7; color: var(--smart-theme-body-color); }
+            
+            /* 搜索结果增加底部padding */
+            .gj-search-results-container { padding-bottom: 120px; max-height: 80vh !important; overflow-y: auto; }
             .gj-search-top-bar { padding: 0 5px 8px 5px; border-bottom: 1px solid var(--smart-theme-border-color-1); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px; }
             .gj-search-group { margin-bottom: 8px; border: 1px solid var(--smart-theme-border-color-1); border-radius: 4px; overflow: hidden; }
             .gj-search-header { background: rgba(0,0,0,0.05); padding: 5px 10px; font-weight: bold; font-size: 0.9em; display: flex; justify-content: space-between; align-items: center; color: #7a9a83; }
@@ -274,13 +228,6 @@
             .gj-search-btn.edit { color: #5b8db8; border-color: #5b8db8; font-weight: bold; }
             .gj-search-btn.replace-all-global { background: #d32f2f; color: white; border: none; padding: 4px 8px; border-radius: 3px; }
             .gj-search-btn.replace { color: #e6a23c; border-color: #e6a23c; }
-            
-            /* 3. 搜索框自适应最大高度 */
-            .gj-search-results-container { 
-                padding-bottom: 60px; 
-                max-height: 80vh !important; /* 自适应屏幕高度 */
-                overflow-y: auto;
-            }
         </style>
     `);
 
@@ -293,6 +240,7 @@
         }
     }
 
+    // --- 核心工具函数 ---
     function getSubtitles(charObj) {
         if (!charObj.data) charObj.data = {};
         if (!charObj.data.greeting_subtitles) charObj.data.greeting_subtitles = { first_mes: "", alts: [] };
@@ -324,31 +272,270 @@
         else if (action === 'move-down' && index < subs.alts.length - 1) [subs.alts[index], subs.alts[index+1]] = [subs.alts[index+1], subs.alts[index]];
     }
 
-    async function openDirectoryTool(charId, refreshCallback) {
-        const popupFunc = SillyTavern.callGenericPopup || window.callGenericPopup;
-        const charObj = SillyTavern.characters[charId];
+    // --- V3.0 优化：生成带交互面板的正则 (White Style & Fixes) ---
+    const generateRegexJson = (format) => {
+        const scriptOpen = "<" + "script>";
+        const scriptClose = "<" + "/script>";
         
-        let currentStep = 'tabs';
+        const replaceStr = `\`\`\`html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+    /* 简约白色风格 */
+    .prologue-container {
+        font-family: sans-serif;
+        padding: 15px;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border: 1px solid #e0e0e0;
+        color: #333333;
+    }
+    .prologue-title {
+        font-weight: bold;
+        margin-bottom: 12px;
+        font-size: 1.1em;
+        color: #333333;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 8px;
+    }
+    .prologue-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .prologue-btn {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        padding: 10px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s;
+        color: #495057;
+        display: flex;
+        align-items: center;
+    }
+    .prologue-btn:hover {
+        background: #e2e6ea;
+        border-color: #ced4da;
+        color: #212529;
+        transform: translateX(2px);
+    }
+    .btn-index {
+        font-weight: bold;
+        margin-right: 8px;
+        color: #7a9a83;
+    }
+</style>
+</head>
+<body>
+
+<template id="prologue-data">
+$1
+</template>
+
+<div class="prologue-container">
+    <div class="prologue-title">开场白目录</div>
+    <div id="button-list" class="prologue-grid">
+    </div>
+</div>
+
+${scriptOpen}
+(async function() {
+    const waitForHelper = () => new Promise(resolve => {
+        if (window.TavernHelper) return resolve(window.TavernHelper);
+        const timer = setInterval(() => {
+            if (window.TavernHelper) {
+                clearInterval(timer);
+                resolve(window.TavernHelper);
+            }
+        }, 100);
+    });
+
+    try {
+        const helper = await waitForHelper();
+        const template = document.getElementById('prologue-data');
+        if (!template) return;
+        const rawText = template.innerHTML.trim();
+        const regex = /^(\\d+)[.、]\\s*([\\s\\S]+?)(?=\\n|$)/gm;
+        
+        const listContainer = document.getElementById('button-list');
+        let match;
+        
+        while ((match = regex.exec(rawText)) !== null) {
+            const index = match[1]; 
+            const title = match[2].trim(); 
+            const btn = document.createElement('div');
+            btn.className = 'prologue-btn';
+            btn.innerHTML = \`<span class="btn-index">#\${index}</span> \${title}\`;
+            
+            btn.onclick = async () => {
+                const targetSwipeId = parseInt(index);
+                try {
+                    await helper.setChatMessages([{
+                        message_id: 0, 
+                        swipe_id: targetSwipeId 
+                    }], { refresh: 'affected' });
+                    
+                    const originalBg = btn.style.background;
+                    btn.style.background = "rgba(122, 154, 131, 0.2)";
+                    setTimeout(() => { btn.style.background = ""; }, 200);
+                } catch (e) {
+                    console.error("切换失败:", e);
+                    alert("切换失败，请检查页数。");
+                }
+            };
+            listContainer.appendChild(btn);
+        }
+    } catch (err) {
+        console.error("Script Error:", err);
+    }
+})();
+${scriptClose}
+
+</body>
+</html>
+\`\`\``; 
+
+        return {
+            "id": "feca6226-9be4-474d-acb0-b5a622993a2e",
+            "scriptName": `开场白跳转`,
+            "findRegex": "<greetings>([\\s\\S]*)</greetings>",
+            "replaceString": replaceStr,
+            "trimStrings": [],
+            "placement": [2],
+            "disabled": false,
+            "markdownOnly": true,
+            "promptOnly": false,
+            "runOnEdit": true,
+            "substituteRegex": 0,
+            "minDepth": 0,
+            "maxDepth": 0
+        };
+    };
+
+    const downloadRegex = (format) => {
+        const json = generateRegexJson(format);
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(json, null, 2));
+        const anchor = document.createElement('a');
+        anchor.href = dataStr;
+        anchor.download = `Regex_Greeting_Jumper_White.json`;
+        document.body.appendChild(anchor); anchor.click(); anchor.remove();
+        toastr.success("正则脚本已下载，请在扩展中导入");
+    };
+
+    // --- V2.8 核心：移动端安全写入逻辑 ---
+    async function processBatchAndSave(charId, totalItems, processFunction, refreshCallback, myPopup) {
+        if (myPopup) myPopup.complete(SillyTavern.POPUP_RESULT.AFFIRMATIVE);
+
+        const $progressContent = $(`
+            <div class="gj-progress-popup">
+                <div class="gj-spinner"></div>
+                <div class="gj-progress-text">正在写入...</div>
+                <div class="gj-progress-sub">0 / ${totalItems}</div>
+            </div>
+        `);
+        
+        let progressPopup = null;
+        if (window.SillyTavern && SillyTavern.Popup) {
+            progressPopup = new SillyTavern.Popup($progressContent, SillyTavern.POPUP_TYPE.TEXT, "", { transparent: true, okButton: false, cancelButton: false });
+            progressPopup.show();
+        }
+
+        const BATCH_SIZE = 5; 
+        let processed = 0;
+        const updateProgress = () => { $progressContent.find('.gj-progress-sub').text(`${processed} / ${totalItems}`); };
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+        try {
+            await sleep(200); 
+
+            for (let i = 0; i < totalItems; i += BATCH_SIZE) {
+                const end = Math.min(i + BATCH_SIZE, totalItems);
+                processFunction(i, end);
+                processed = end;
+                updateProgress();
+                await sleep(50);
+            }
+
+            $progressContent.find('.gj-progress-text').text("正在保存...");
+            await sleep(100); 
+            
+            await forceSave(charId);
+            
+            $progressContent.find('.gj-progress-text').text("刷新界面...");
+            await sleep(500); 
+
+            toastr.success(`成功更新 ${totalItems} 条数据`);
+            if (progressPopup) progressPopup.complete(SillyTavern.POPUP_RESULT.AFFIRMATIVE);
+            
+            if (refreshCallback) setTimeout(refreshCallback, 200);
+
+        } catch (err) {
+            console.error(err);
+            toastr.error("写入过程出错，请检查控制台");
+            if (progressPopup) progressPopup.complete(SillyTavern.POPUP_RESULT.CANCELLED);
+        }
+    }
+
+    // --- V2.8 核心：搜索精准定位 (镜像模拟法) ---
+    function scrollToCursorPosition($textarea, position) {
+        if (!$textarea || $textarea.length === 0) return;
+        const textarea = $textarea[0];
+        const div = document.createElement('div');
+        const computed = window.getComputedStyle(textarea);
+        const stylesToCopy = [
+            'font-family', 'font-size', 'font-weight', 'font-style', 'letter-spacing', 'line-height',
+            'text-transform', 'word-spacing', 'text-indent', 'white-space', 'word-wrap', 'word-break',
+            'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+            'border-width', 'box-sizing', 'width'
+        ];
+        stylesToCopy.forEach(prop => div.style[prop] = computed[prop]);
+        div.style.position = 'absolute'; div.style.visibility = 'hidden';
+        div.style.top = '0'; div.style.left = '-9999px'; div.style.overflow = 'hidden'; div.style.height = 'auto';
+        div.textContent = textarea.value.substring(0, position);
+        const span = document.createElement('span'); span.textContent = '|'; div.appendChild(span);
+        document.body.appendChild(div);
+        const cursorTop = span.offsetTop + parseInt(computed['paddingTop']);
+        const viewportHeight = textarea.clientHeight;
+        const targetScroll = Math.max(0, cursorTop - (viewportHeight * 0.33));
+        textarea.scrollTop = targetScroll;
+        document.body.removeChild(div);
+    }
+
+    // --- 界面逻辑 ---
+
+    async function openDirectoryTool(charId, refreshCallback) {
+        const charObj = SillyTavern.characters[charId];
         let importText = charObj.first_mes || ""; 
         let parsedMatches = [];
         let startIndex = 0; 
         let exportText = "";
+        const currentFormat = "{{i}}. {{text}}"; 
+        let currentStep = 'tabs';
+        let isSwitchingView = false; // Flag to control closing logic
 
-        const generateExportText = () => {
+        const updateExportPreview = () => {
             const subs = getSubtitles(charObj);
             let lines = [];
             (charObj.data.alternate_greetings || []).forEach((g, i) => {
                 const sub = subs.alts[i];
-                if (sub && sub.trim()) lines.push(`${i + 1}. ${sub.trim()}`);
+                if (sub && sub.trim()) {
+                    let line = currentFormat.replace('{{i}}', i + 1).replace('{{text}}', sub.trim());
+                    lines.push(line);
+                }
             });
-            return lines.join('\n');
+            exportText = `<greetings>\n${lines.join('\n')}\n</greetings>`;
+            $('.export-area').val(exportText);
         };
-        exportText = generateExportText();
 
-        const altsCount = (charObj.data.alternate_greetings || []).length;
         const generateOptionsHtml = (selectedVal) => {
             let html = `<option value="-1" ${selectedVal === -1 ? 'selected' : ''}>开场白 #0</option>`;
-            for (let i = 0; i < altsCount; i++) html += `<option value="${i}" ${selectedVal === i ? 'selected' : ''}>开场白 #${i + 1}</option>`;
+            const len = (charObj.data.alternate_greetings || []).length;
+            for (let i = 0; i < len; i++) html += `<option value="${i}" ${selectedVal === i ? 'selected' : ''}>开场白 #${i + 1}</option>`;
             return html;
         };
 
@@ -356,7 +543,7 @@
 
         const renderTabUI = () => {
             const $container = $(`
-                <div class="gj-parse-container" style="height: 500px;">
+                <div class="gj-parse-container">
                     <div class="gj-tabs-header">
                         <div class="gj-tab ${currentStep === 'tabs' ? 'active' : ''}" data-tab="import">导入/解析</div>
                         <div class="gj-tab" data-tab="export">导出/生成</div>
@@ -365,16 +552,22 @@
                         <div class="gj-parse-header-row"><span class="gj-parse-hint">修改首页或粘贴开场白列表:</span></div>
                         <div class="gj-parse-textarea-wrapper"><textarea class="gj-parse-textarea import-area" placeholder="粘贴内容...">${_.escape(importText)}</textarea></div>
                         <div class="gj-parse-custom-footer" style="margin-top:10px;">
-                            <button class="gj-custom-btn clear-btn"><i class="fa-solid fa-trash"></i> 清空</button>
-                            <button class="gj-custom-btn primary parse-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> 解析目录</button>
+                            <button type="button" class="gj-custom-btn clear-btn"><i class="fa-solid fa-trash"></i> 清空</button>
+                            <button type="button" class="gj-custom-btn primary parse-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> 解析目录</button>
                         </div>
                     </div>
                     <div class="gj-tab-content" id="tab-export">
-                        <div class="gj-parse-header-row"><span class="gj-parse-hint">已根据副标题生成目录:</span></div>
-                        <div class="gj-parse-textarea-wrapper"><textarea class="gj-parse-textarea export-area" placeholder="没有副标题数据...">${_.escape(exportText)}</textarea></div>
+                        <div class="gj-parse-header-row">
+                            <span class="gj-parse-hint">开场白目录预览（据标题生成）:</span>
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <button type="button" class="gj-dl-btn" title="下载正则"><i class="fa-solid fa-download"></i> 下载正则</button>
+                            </div>
+                        </div>
+                        <div class="gj-parse-textarea-wrapper"><textarea class="gj-parse-textarea export-area"></textarea></div>
                         <div class="gj-parse-custom-footer" style="margin-top:10px;">
-                            <button class="gj-custom-btn copy-btn"><i class="fa-solid fa-copy"></i> 复制</button>
-                            <button class="gj-custom-btn danger overwrite-btn"><i class="fa-solid fa-triangle-exclamation"></i> 覆盖首页</button>
+                            <button type="button" class="gj-custom-btn copy-btn" title="复制内容"><i class="fa-solid fa-copy"></i></button>
+                            <button type="button" class="gj-custom-btn success insert-as-new-btn" style="font-weight:bold;">插入为新首页</button>
+                            <button type="button" class="gj-custom-btn danger overwrite-btn" style="font-weight:bold;">覆盖原首页</button>
                         </div>
                     </div>
                 </div>
@@ -386,60 +579,141 @@
                 $(this).addClass('active');
                 $container.find('.gj-tab-content').removeClass('active');
                 $container.find(`#tab-${tabId}`).addClass('active');
+                if(tabId === 'export') updateExportPreview();
             });
 
-            $container.find('.clear-btn').on('click', () => $container.find('.import-area').val('').focus());
-            $container.find('.copy-btn').on('click', () => navigator.clipboard.writeText($container.find('.export-area').val()).then(() => toastr.success("已复制")));
-            
+            $container.find('.clear-btn').on('click', (e) => { e.preventDefault(); $container.find('.import-area').val('').focus(); });
+            $container.find('.copy-btn').on('click', (e) => { e.preventDefault(); navigator.clipboard.writeText($container.find('.export-area').val()).then(() => toastr.success("已复制")); });
             $container.find('.import-area').on('input', function() { importText = $(this).val(); });
-            $container.find('.export-area').on('input', function() { exportText = $(this).val(); });
+            $container.find('.gj-dl-btn').on('click', (e) => { e.preventDefault(); downloadRegex(currentFormat); });
 
-            $container.find('.parse-btn').on('click', () => {
+            $container.find('.parse-btn').on('click', (e) => {
+                e.preventDefault();
                 importText = $container.find('.import-area').val();
                 if (!importText.trim()) { toastr.warning("内容为空"); return; }
-                const regex = /(?:^|\n)\s*(?:[(（]?(?:开场白|场景|Part|No\.?|Scene|Scenario)\s*)?([0-9]+|[一二三四五六七八九十]+)[)）]?\s*[:：.、\-\—\s]+\s*(.*?)(?=\n|$)/igm;
+                const regex = /(?:^|\n)\s*(?:[#＃] |[\[【(（]?(?:开场白|场景|Part|No\.?|Scene|Scenario)\s*)?([0-9]+|[一二三四五六七八九十]+)[\]】)）]?\s*[:：.、\-\—\s]+\s*(.*?)(?=\n|$)/igm;
                 parsedMatches = [];
                 let match;
-                while ((match = regex.exec(importText)) !== null) {
-                    parsedMatches.push({ title: match[2].trim(), selectedIndex: null });
-                }
+                while ((match = regex.exec(importText)) !== null) parsedMatches.push({ title: match[2].trim(), selectedIndex: null });
                 if (parsedMatches.length === 0) { toastr.warning("未识别到目录格式"); return; }
+                
+                isSwitchingView = true; 
                 myPopup.complete(SillyTavern.POPUP_RESULT.CANCELLED);
                 setTimeout(() => openPreviewUI(), 50);
             });
 
-            $container.find('.overwrite-btn').on('click', async () => {
-                if(!confirm("确定要用当前的文本覆盖【开场白 #0】的内容吗？\n原内容将会丢失。")) return;
-                charObj.first_mes = exportText;
-                await forceSave(charId);
-                toastr.success("首页已更新");
-                if(refreshCallback) refreshCallback();
-                myPopup.complete(SillyTavern.POPUP_RESULT.AFFIRMATIVE);
+            // V3.3 Fix: Overwrite Homepage Sync Logic
+            $container.find('.overwrite-btn').on('click', async (e) => {
+                e.preventDefault();
+                if(!confirm("确定覆盖【开场白 #0】？")) return;
+                const newText = $container.find('.export-area').val();
+                
+                isSwitchingView = true; // Fix 1: 立即标记，防止双窗口
+
+                await processBatchAndSave(charId, 1, (start, end) => {
+                    // 1. 更新角色卡数据
+                    charObj.first_mes = newText;
+
+                    // 2. 同步更新聊天记录 (Message #0)
+                    if (window.SillyTavern.chat && window.SillyTavern.chat.length > 0) {
+                        const msg0 = window.SillyTavern.chat[0];
+                        let currentSwipes = msg0.swipes ? [...msg0.swipes] : [msg0.mes];
+                        
+                        // 确保数组存在
+                        if(currentSwipes.length === 0) currentSwipes = [newText];
+                        else currentSwipes[0] = newText;
+                        
+                        const updatePayload = { message_id: 0, swipes: currentSwipes };
+                        
+                        // 如果当前用户正看着首页 (Swipe 0)，则强制更新显示的 message 内容
+                        if (msg0.swipe_id === 0 || msg0.swipe_id === undefined) {
+                            updatePayload.message = newText;
+                        }
+                        
+                        // 调用 Helper 刷新 UI
+                        window.TavernHelper.setChatMessages([updatePayload], { refresh: 'affected' });
+                    }
+                }, () => {
+                    if(refreshCallback) refreshCallback();
+                }, myPopup);
             });
 
+            $container.find('.insert-as-new-btn').on('click', async (e) => {
+                e.preventDefault();
+                if(!confirm("确定插入新页面？原内容将顺移。")) return;
+
+                isSwitchingView = true; // Fix 1: 立即标记，防止双窗口
+
+                await processBatchAndSave(charId, 1, (start, end) => {
+                    const oldFirstMes = charObj.first_mes || "";
+                    const subs = getSubtitles(charObj);
+                    const oldFirstSubtitle = subs.first_mes || "";
+                    
+                    if (!charObj.data.alternate_greetings) charObj.data.alternate_greetings = [];
+                    charObj.data.alternate_greetings.unshift(oldFirstMes);
+                    
+                    if (!subs.alts) subs.alts = [];
+                    subs.alts.unshift(oldFirstSubtitle);
+                    
+                    charObj.first_mes = $container.find('.export-area').val();
+                    subs.first_mes = "目录页"; 
+
+                    // Fix 2: 修正 Active Box，如果当前查看的是 #0，插入后内容变到了 #1，
+                    // 我们需要将聊天记录的指针也修正到 #1，这样看起来还是原来的内容
+                    const msgZero = SillyTavern.chat[0];
+                    if (msgZero && (msgZero.swipe_id === 0 || msgZero.swipe_id === undefined)) {
+                        // 更新内部数据
+                        msgZero.swipe_id = 1;
+                        // 更新 Helper 状态 (但不刷新文本，避免闪烁)
+                        if (window.TavernHelper) {
+                            window.TavernHelper.setChatMessages([{
+                                message_id: 0,
+                                swipe_id: 1
+                            }], { refresh: 'none' });
+                        }
+                    } else if (msgZero && msgZero.swipe_id > 0) {
+                        // 如果已经在看其他开场白，索引也要+1
+                        msgZero.swipe_id += 1;
+                        if (window.TavernHelper) {
+                            window.TavernHelper.setChatMessages([{
+                                message_id: 0,
+                                swipe_id: msgZero.swipe_id
+                            }], { refresh: 'none' });
+                        }
+                    }
+                }, () => {
+                    if(refreshCallback) refreshCallback();
+                }, myPopup);
+            });
+
+            updateExportPreview();
             return $container;
         };
 
         const openTabsUI = async () => {
             const $content = renderTabUI();
             myPopup = new SillyTavern.Popup($content, SillyTavern.POPUP_TYPE.TEXT, "", { large: true, okButton: "关闭" });
-            myPopup.show();
+            
+            const result = await myPopup.show();
+            if (!isSwitchingView) {
+                setTimeout(showGreetingManager, 50);
+            }
         };
 
         const openPreviewUI = async () => {
             const $previewContainer = $(`
-                <div class="gj-parse-container" style="height: 550px;">
+                <div class="gj-parse-container">
                     <div class="gj-parse-preview-header">
                         <div class="gj-parse-info">识别到 <b>${parsedMatches.length}</b> 个标题</div>
                         <div class="gj-parse-start-select-group">
-                            <label>匹配起点:</label>
+                            <label>起点:</label>
                             <select class="gj-parse-select main-starter">${generateOptionsHtml(startIndex)}</select>
                         </div>
                     </div>
                     <div class="gj-parse-preview-list"></div>
                     <div class="gj-parse-custom-footer" style="margin-top:auto;">
-                        <button class="gj-custom-btn back-btn"><i class="fa-solid fa-arrow-left"></i> 返回修改</button>
-                        <button class="gj-custom-btn primary confirm-btn"><i class="fa-solid fa-check"></i> 确认写入</button>
+                        <button type="button" class="gj-custom-btn back-btn"><i class="fa-solid fa-arrow-left"></i> 返回</button>
+                        <button type="button" class="gj-custom-btn primary confirm-btn"><i class="fa-solid fa-check"></i> 确认写入</button>
                     </div>
                 </div>
             `);
@@ -453,8 +727,7 @@
                 $selects.each(function() { const val = $(this).val(); valueCounts[val] = (valueCounts[val] || 0) + 1; });
                 $selects.each(function() {
                     const val = $(this).val();
-                    if (valueCounts[val] > 1) $(this).addClass('error');
-                    else $(this).removeClass('error');
+                    if (valueCounts[val] > 1) $(this).addClass('error'); else $(this).removeClass('error');
                 });
             };
 
@@ -479,28 +752,37 @@
                 checkDuplicates();
             };
 
-            $globalSelect.on('change', () => {
-                startIndex = parseInt($globalSelect.val());
-                renderRows();
-            });
+            $globalSelect.on('change', () => { startIndex = parseInt($globalSelect.val()); renderRows(); });
             renderRows();
 
-            $previewContainer.find('.back-btn').on('click', () => {
+            $previewContainer.find('.back-btn').on('click', (e) => {
+                e.preventDefault();
+                isSwitchingView = true;
                 myPopup.complete(SillyTavern.POPUP_RESULT.CANCELLED);
                 setTimeout(openTabsUI, 50);
             });
 
-            $previewContainer.find('.confirm-btn').on('click', async () => {
-                let updatedCount = 0;
-                parsedMatches.forEach((m) => {
-                    if (m.title.trim() === "" || isNaN(m.selectedIndex)) return;
-                    if (m.selectedIndex === -1) { setSubtitle(charId, -1, m.title); updatedCount++; }
-                    else if (m.selectedIndex < (charObj.data.alternate_greetings || []).length) { setSubtitle(charId, m.selectedIndex, m.title); updatedCount++; }
-                });
-                await forceSave(charId);
-                toastr.success(`更新 ${updatedCount} 个副标题`);
-                if (refreshCallback) refreshCallback();
-                myPopup.complete(SillyTavern.POPUP_RESULT.AFFIRMATIVE);
+            $previewContainer.find('.confirm-btn').on('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                isSwitchingView = true; // Fix 1: 标记
+
+                const processBatchLogic = (startIdx, endIdx) => {
+                    for (let i = startIdx; i < endIdx; i++) {
+                        const m = parsedMatches[i];
+                        if (!m || m.title.trim() === "" || isNaN(m.selectedIndex)) continue;
+                        if (m.selectedIndex === -1) {
+                            setSubtitle(charId, -1, m.title);
+                        } else if (m.selectedIndex < (charObj.data.alternate_greetings || []).length) {
+                            setSubtitle(charId, m.selectedIndex, m.title);
+                        }
+                    }
+                };
+
+                await processBatchAndSave(charId, parsedMatches.length, processBatchLogic, () => {
+                    if(refreshCallback) refreshCallback();
+                }, myPopup);
             });
 
             myPopup = new SillyTavern.Popup($previewContainer, SillyTavern.POPUP_TYPE.TEXT, "", { large: true, okButton: "关闭" });
@@ -510,6 +792,7 @@
         openTabsUI();
     }
 
+    // --- 全屏编辑器 (V2.8) ---
     async function openFullscreenEditor(index, label, initialFindStr = "", initialReplaceStr = "") {
         const charId = SillyTavern.characterId;
         const charObj = SillyTavern.characters[charId];
@@ -525,9 +808,7 @@
                 <div class="gj-fs-header ${isCollapsed ? 'collapsed' : ''}">
                     <div class="gj-fs-title-row">
                         <input class="gj-fs-title-input" value="${_.escape(titleValue)}">
-                        <button class="gj-fs-toggle-btn" title="切换工具栏">
-                            ${isCollapsed ? '<i class="fa-solid fa-chevron-down"></i>' : '<i class="fa-solid fa-chevron-up"></i>'}
-                        </button>
+                        <button class="gj-fs-toggle-btn">${isCollapsed ? '<i class="fa-solid fa-chevron-down"></i>' : '<i class="fa-solid fa-chevron-up"></i>'}</button>
                     </div>
                     <div class="gj-fs-tools-container">
                         <div class="gj-fs-row">
@@ -544,7 +825,9 @@
                         </div>
                     </div>
                 </div>
-                <textarea class="gj-fullscreen-textarea">${_.escape(originalContent)}</textarea>
+                <div class="gj-fs-textarea-wrapper">
+                    <textarea class="gj-fullscreen-textarea">${_.escape(originalContent)}</textarea>
+                </div>
             </div>
         `);
 
@@ -577,12 +860,7 @@
             if (nextPos !== -1) {
                 $textarea.focus();
                 $textarea[0].setSelectionRange(nextPos, nextPos + term.length);
-                
-                const textBefore = val.substring(0, nextPos);
-                const lines = textBefore.split("\n").length;
-                const lineHeight = 24; 
-                const containerHeight = $textarea.height();
-                $textarea.scrollTop(lines * lineHeight - containerHeight / 2);
+                scrollToCursorPosition($textarea, nextPos);
             } else {
                 toastr.warning("未找到匹配内容");
             }
@@ -653,7 +931,6 @@
 
     async function openSearchAndReplaceLogic(charId) {
         const popupFunc = SillyTavern.callGenericPopup || window.callGenericPopup;
-        
         const $container = $('<div style="display:flex; flex-direction:column; gap:10px; text-align:left;"></div>');
         const $inputFind = $('<input class="text_pole" style="width:100%; margin-top:5px;" type="text" placeholder="输入查找内容...">');
         const $inputReplace = $('<input class="text_pole" style="width:100%; margin-top:5px;" type="text" placeholder="替换为 (留空则删除)...">');
@@ -675,10 +952,7 @@
             if (!content) return;
             let indices = [];
             let pos = content.indexOf(findStr);
-            while (pos !== -1) {
-                indices.push(pos);
-                pos = content.indexOf(findStr, pos + 1);
-            }
+            while (pos !== -1) { indices.push(pos); pos = content.indexOf(findStr, pos + 1); }
             if (indices.length > 0) results.push({ index, label, content, indices });
         };
 
@@ -697,15 +971,14 @@
             const $btnGlobalReplace = $(`<button class="gj-search-btn replace-all-global">全局替换所有</button>`);
             $btnGlobalReplace.on('click', async () => {
                 if(!confirm(`确定替换所有 "${findStr}" 为 "${replaceStr}" 吗？`)) return;
-                const char = SillyTavern.characters[charId];
-                if (char.first_mes) char.first_mes = char.first_mes.split(findStr).join(replaceStr);
-                if (char.data.alternate_greetings) {
-                    char.data.alternate_greetings = char.data.alternate_greetings.map(g => g ? g.split(findStr).join(replaceStr) : g);
-                }
-                await forceSave(charId);
-                toastr.success("全局替换完成");
                 if (typeof Swal !== 'undefined') Swal.close();
-                setTimeout(showGreetingManager, 300);
+                
+                await processBatchAndSave(charId, 1, (start, end) => {
+                    if (charObj.first_mes) charObj.first_mes = charObj.first_mes.split(findStr).join(replaceStr);
+                    if (charObj.data.alternate_greetings) {
+                        charObj.data.alternate_greetings = charObj.data.alternate_greetings.map(g => g ? g.split(findStr).join(replaceStr) : g);
+                    }
+                }, showGreetingManager, null);
             });
             $topBar.append($btnGlobalReplace);
         }
@@ -774,26 +1047,11 @@
 
     async function jumpToGreeting(targetIndex, contentToUse) {
         if (!SillyTavern.chat || SillyTavern.chat.length === 0) return false;
-        
         if (SillyTavern.chat.length > 1) {
             const popupFunc = SillyTavern.callGenericPopup || window.callGenericPopup;
-            const htmlMsg = `
-                <div style="text-align:center; padding:10px;">
-                    <i class="fa-solid fa-triangle-exclamation" style="font-size:3em; color:#e6a23c; margin-bottom:10px;"></i>
-                    <h3>确认修改开场白？</h3>
-                    <p style="opacity:0.8; margin-bottom:10px;">当前聊天已有 ${SillyTavern.chat.length} 条消息记录。</p>
-                    <p style="color:#d32f2f; font-weight:bold;">修改第0层开场白会改变故事起点，<br>可能导致现有上下文逻辑不连贯。</p>
-                    <p style="font-size:0.9em; opacity:0.7; margin-top:10px;">如果您只是想插入新剧情，请点击左侧的“插入聊天”。</p>
-                </div>
-            `;
-            const confirmSwitch = await popupFunc(htmlMsg, SillyTavern.POPUP_TYPE.CONFIRM, "", { okButton: "确定替换", cancelButton: "取消" });
-            
-            // 修复点：在SillyTavern中，CONFIRM类型的弹窗点击OK返回的是 1 (truthy)，取消是 0/false。
-            // 原代码 'confirmSwitch !== true' 在返回 1 时会判定为失败，因此导致逻辑中断。
-            // 修改为检查非真值。
+            const confirmSwitch = await popupFunc("确认切换开场白？当前已有聊天记录。", SillyTavern.POPUP_TYPE.CONFIRM, "", { okButton: "确定", cancelButton: "取消" });
             if (!confirmSwitch) return false; 
         }
-
         const msgZero = SillyTavern.chat[0];
         let currentSwipes = msgZero.swipes ? [...msgZero.swipes] : [msgZero.mes];
         while (currentSwipes.length <= targetIndex) currentSwipes.push("...");
@@ -809,6 +1067,8 @@
         toastr.success("已切换至首页");
     }
 
+    // --- V2.8 核心：主界面列表分批渲染 ---
+    // --- V2.9 核心：主界面底部自定义关闭按钮 ---
     async function showGreetingManager() {
         const charId = SillyTavern.characterId;
         const charData = window.TavernHelper.getCharData('current');
@@ -818,20 +1078,18 @@
         const savedSetting = localStorage.getItem(STORAGE_KEY_AUTO_CLOSE);
         let isAutoClose = savedSetting === 'true';
 
-        const tryAutoClose = () => {
+        // 尝试自动关闭（安全模式）
+        const tryAutoClose = async () => {
             if ($('#gj-auto-close-checkbox').is(':checked')) {
-                if (mainPopupInstance && typeof mainPopupInstance.complete === 'function') {
-                    mainPopupInstance.complete(SillyTavern.POPUP_RESULT.AFFIRMATIVE);
-                } else if (typeof Swal !== 'undefined') {
-                    Swal.close();
-                }
+                // 清空重内容，防止卡顿
+                $scrollArea.empty();
+                await new Promise(r => setTimeout(r, 100)); // 让浏览器喘口气
+                if (mainPopupInstance) mainPopupInstance.complete(SillyTavern.POPUP_RESULT.AFFIRMATIVE);
+                else if (typeof Swal !== 'undefined') Swal.close();
             }
         };
 
         const $wrapper = $('<div class="gj-wrapper"></div>');
-        
-        const alts = Array.isArray(SillyTavern.characters[charId].data.alternate_greetings) ? SillyTavern.characters[charId].data.alternate_greetings : [];
-
         const $headerWrapper = $(`
             <div class="gj-header-wrapper">
                 <div class="gj-header-row-1">
@@ -844,28 +1102,46 @@
                     </div>
                 </div>
                 <div class="gj-header-row-2">
-                    <button class="gj-top-btn directory"><i class="fa-solid fa-list-ol"></i> 目录工具</button>
+                    <button type="button" class="gj-top-btn directory"><i class="fa-solid fa-list-ol"></i> 目录工具</button>
                     <div class="gj-icon-group">
-                        <button class="gj-icon-btn add" title="新建"><i class="fa-solid fa-plus"></i></button>
-                        <button class="gj-icon-btn search" title="搜索"><i class="fa-solid fa-magnifying-glass"></i></button>
+                        <button type="button" class="gj-icon-btn add" title="新建"><i class="fa-solid fa-plus"></i></button>
+                        <button type="button" class="gj-icon-btn search" title="搜索"><i class="fa-solid fa-magnifying-glass"></i></button>
                     </div>
                 </div>
             </div>
         `);
-        
         const $scrollArea = $('<div class="gj-scroll-area"></div>');
-        $wrapper.append($headerWrapper).append($scrollArea);
+        
+        // V2.9 增加底部自定义关闭栏
+        const $mainFooter = $(`
+            <div class="gj-main-footer">
+                <button type="button" class="gj-main-close-btn"><i class="fa-solid fa-xmark"></i> 关闭窗口</button>
+            </div>
+        `);
 
-        $headerWrapper.find('#gj-auto-close-checkbox').on('change', function() {
-            localStorage.setItem(STORAGE_KEY_AUTO_CLOSE, $(this).is(':checked'));
-        });
+        $wrapper.append($headerWrapper).append($scrollArea).append($mainFooter);
 
-        const renderList = () => {
+        $headerWrapper.find('#gj-auto-close-checkbox').on('change', function() { localStorage.setItem(STORAGE_KEY_AUTO_CLOSE, $(this).is(':checked')); });
+
+        // V2.9 安全关闭逻辑
+        const safeClose = async () => {
+            $scrollArea.empty(); // 关键：先清空重内容
+            await new Promise(r => setTimeout(r, 50)); // 让浏览器执行 DOM 移除
+            if (mainPopupInstance) mainPopupInstance.complete(SillyTavern.POPUP_RESULT.AFFIRMATIVE);
+            else if (typeof Swal !== 'undefined') Swal.close();
+        };
+
+        $mainFooter.find('.gj-main-close-btn').on('click', safeClose);
+
+        // Fix 3: 增加 maintainScroll 参数，删除时不重置滚动条
+        const renderList = async (scrollToIndex = -1, maintainScroll = false) => {
+            // Fix 3: 记录当前滚动位置
+            const currentScrollPos = $scrollArea.scrollTop();
+            
             $scrollArea.empty();
             const charObj = SillyTavern.characters[charId];
             if (!charObj.data) charObj.data = {};
             const alts = Array.isArray(charObj.data.alternate_greetings) ? charObj.data.alternate_greetings : [];
-            const subtitles = getSubtitles(charObj);
             const msgZero = SillyTavern.chat[0];
             let currentSwipeIndex = msgZero && msgZero.swipe_id !== undefined ? msgZero.swipe_id : 0;
 
@@ -874,174 +1150,182 @@
                 ...alts.map((g, i) => ({ type: 'alt', index: i, content: g, label: `开场白 #${i + 1}`, protected: false }))
             ];
 
-            allGreets.forEach((item, loopIndex) => {
-                const isCurrent = (loopIndex === currentSwipeIndex);
-                const subtitle = getSubtitle(charId, item.index);
-                
-                const $card = $(`
-                    <div class="gj-card ${isCurrent ? 'active' : ''}" data-index="${loopIndex}">
-                        <div class="gj-card-header-main">
-                            <button class="gj-btn-max" title="全屏编辑"><i class="fa-solid fa-maximize"></i></button>
-                            <div class="gj-title-area">
-                                <span class="gj-title-main">${item.label}</span>
-                                ${subtitle ? `<span class="gj-title-sub">(${_.escape(subtitle)})</span>` : ''}
+            const total = allGreets.length;
+            const RENDER_BATCH = 5;
+            
+            // --- V2.8 分批渲染列表逻辑 ---
+            const renderBatch = async (start) => {
+                for (let i = start; i < Math.min(start + RENDER_BATCH, total); i++) {
+                    const item = allGreets[i];
+                    const loopIndex = i;
+                    const isCurrent = (loopIndex === currentSwipeIndex);
+                    const subtitle = getSubtitle(charId, item.index);
+                    
+                    const $card = $(`
+                        <div class="gj-card ${isCurrent ? 'active' : ''}" data-index="${loopIndex}">
+                            <div class="gj-card-header-main">
+                                <button type="button" class="gj-btn-max" title="全屏编辑"><i class="fa-solid fa-maximize"></i></button>
+                                <div class="gj-title-area">
+                                    <span class="gj-title-main">${item.label}</span>
+                                    ${subtitle ? `<span class="gj-title-sub">(${_.escape(subtitle)})</span>` : ''}
+                                </div>
+                                <div class="gj-header-right">
+                                    <button type="button" class="gj-btn-edit-toggle" title="编辑"><i class="fa-solid fa-pen"></i></button>
+                                </div>
                             </div>
-                            <div class="gj-header-right">
-                                <button class="gj-btn-edit-toggle" title="编辑"><i class="fa-solid fa-pen"></i></button>
+                            <div class="gj-card-header-tools">
+                                <input type="text" class="gj-subtitle-input" placeholder="输入副标题..." value="${_.escape(subtitle)}">
+                                <div class="gj-tools-row" style="margin-top:8px;">
+                                    <button type="button" class="gj-btn-new-item add"><i class="fa-solid fa-plus"></i> 在下方插入新开场</button>
+                                    <div class="gj-tools-right">
+                                        ${!item.protected && item.index > 0 ? `<button type="button" class="gj-action-btn up"><i class="fa-solid fa-arrow-up"></i></button>` : ''}
+                                        ${!item.protected && item.index < alts.length - 1 ? `<button type="button" class="gj-action-btn down"><i class="fa-solid fa-arrow-down"></i></button>` : ''}
+                                        ${!item.protected ? `<button type="button" class="gj-action-btn del"><i class="fa-solid fa-trash"></i></button>` : ''}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="gj-card-header-tools">
-                            <input type="text" class="gj-subtitle-input" placeholder="输入副标题..." value="${_.escape(subtitle)}">
-                            <div class="gj-tools-row" style="margin-top:8px;">
-                                <button class="gj-btn-new-item add"><i class="fa-solid fa-plus"></i> 在下方插入新开场</button>
-                                <div class="gj-tools-right">
-                                    ${!item.protected && item.index > 0 ? `<button class="gj-action-btn up"><i class="fa-solid fa-arrow-up"></i></button>` : ''}
-                                    ${!item.protected && item.index < alts.length - 1 ? `<button class="gj-action-btn down"><i class="fa-solid fa-arrow-down"></i></button>` : ''}
-                                    ${!item.protected ? `<button class="gj-action-btn del"><i class="fa-solid fa-trash"></i></button>` : ''}
+                            <div class="gj-card-body">
+                                <textarea class="gj-textarea" readonly placeholder="内容预览...">${_.escape(item.content)}</textarea>
+                                <div class="gj-expand-bar" title="展开/收起"><i class="fa-solid fa-chevron-down"></i></div>
+                                <div class="gj-footer">
+                                    <button type="button" class="gj-footer-btn insert"><i class="fa-solid fa-paper-plane"></i> 插入聊天</button>
+                                    <button type="button" class="gj-footer-btn switch ${isCurrent ? 'active' : ''}">
+                                        ${isCurrent ? '<i class="fa-solid fa-check-circle"></i> 当前开场' : '<i class="fa-solid fa-rotate"></i> 设为开场'}
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                        <div class="gj-card-body">
-                            <textarea class="gj-textarea" readonly placeholder="内容预览...">${_.escape(item.content)}</textarea>
-                            <div class="gj-expand-bar" title="展开/收起"><i class="fa-solid fa-chevron-down"></i></div>
-                            <div class="gj-footer">
-                                <button class="gj-footer-btn insert"><i class="fa-solid fa-paper-plane"></i> 插入聊天</button>
-                                <button class="gj-footer-btn switch ${isCurrent ? 'active' : ''}">
-                                    ${isCurrent ? '<i class="fa-solid fa-check-circle"></i> 当前开场' : '<i class="fa-solid fa-rotate"></i> 设为开场'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `);
+                    `);
 
-                const $textarea = $card.find('.gj-textarea');
-                const $subInput = $card.find('.gj-subtitle-input');
-                const $toggle = $card.find('.gj-btn-edit-toggle');
-                const $expandBar = $card.find('.gj-expand-bar');
+                    const $textarea = $card.find('.gj-textarea');
+                    const $subInput = $card.find('.gj-subtitle-input');
+                    const $toggle = $card.find('.gj-btn-edit-toggle');
+                    const $expandBar = $card.find('.gj-expand-bar');
 
-                $toggle.on('click', async () => {
-                    $card.toggleClass('editing');
-                    const isEditing = $card.hasClass('editing');
-                    if (isEditing) {
-                        $toggle.html('<i class="fa-solid fa-floppy-disk"></i> 保存');
-                        $textarea.prop('readonly', false).focus();
-                    } else {
-                        $toggle.html('<i class="fa-solid fa-pen"></i>');
-                        $textarea.prop('readonly', true);
-                        const newText = $textarea.val();
-                        const newSub = $subInput.val();
-                        if (item.protected) charObj.first_mes = newText;
-                        else charObj.data.alternate_greetings[item.index] = newText;
-                        setSubtitle(charId, item.index, newSub);
-                        await forceSave(charId);
-                        toastr.success("已保存修改");
-                        renderList();
-                    }
-                });
-
-                $expandBar.on('click', () => {
-                    const isExpanded = $textarea.hasClass('expanded');
-                    if (isExpanded) {
-                        $textarea.removeClass('expanded');
-                        $expandBar.html('<i class="fa-solid fa-chevron-down"></i>');
-                    } else {
-                        $textarea.addClass('expanded');
-                        $expandBar.html('<i class="fa-solid fa-chevron-up"></i>');
-                    }
-                });
-
-                $card.find('.gj-btn-max').on('click', () => {
-                    if (typeof Swal !== 'undefined') Swal.close();
-                    setTimeout(() => openFullscreenEditor(item.index, item.label), 200);
-                });
-                $card.find('.add').on('click', async () => {
-                    if (!charObj.data.alternate_greetings) charObj.data.alternate_greetings = [];
-                    charObj.data.alternate_greetings.splice(item.index + 1, 0, "");
-                    syncSubtitles(charId, 'add', item.index);
-                    await forceSave(charId);
-                    renderList();
-                    toastr.success("已插入");
-                });
-                if (!item.protected) {
-                    $card.find('.up').on('click', async () => {
-                        const arr = charObj.data.alternate_greetings;
-                        [arr[item.index - 1], arr[item.index]] = [arr[item.index], arr[item.index - 1]];
-                        syncSubtitles(charId, 'move-up', item.index);
-                        await forceSave(charId);
-                        renderList();
-                    });
-                    $card.find('.down').on('click', async () => {
-                        const arr = charObj.data.alternate_greetings;
-                        [arr[item.index], arr[item.index + 1]] = [arr[item.index + 1], arr[item.index]];
-                        syncSubtitles(charId, 'move-down', item.index);
-                        await forceSave(charId);
-                        renderList();
-                    });
-                    $card.find('.del').on('click', async () => {
-                        const popupFunc = SillyTavern.callGenericPopup || window.callGenericPopup;
-                        if(await popupFunc(`删除 ${item.label}？`, SillyTavern.POPUP_TYPE.CONFIRM)) {
-                            charObj.data.alternate_greetings.splice(item.index, 1);
-                            syncSubtitles(charId, 'delete', item.index);
+                    $toggle.on('click', async () => {
+                        $card.toggleClass('editing');
+                        if ($card.hasClass('editing')) {
+                            $toggle.html('<i class="fa-solid fa-floppy-disk"></i> 保存');
+                            $textarea.prop('readonly', false).focus();
+                        } else {
+                            $toggle.html('<i class="fa-solid fa-pen"></i>');
+                            $textarea.prop('readonly', true);
+                            if (item.protected) charObj.first_mes = $textarea.val();
+                            else charObj.data.alternate_greetings[item.index] = $textarea.val();
+                            setSubtitle(charId, item.index, $subInput.val());
                             await forceSave(charId);
-                            toastr.success("已删除");
-                            renderList();
+                            toastr.success("已保存");
+                            renderList(loopIndex); 
                         }
                     });
-                }
-                $card.find('.insert').on('click', async () => {
-                    const txt = window.TavernHelper.substitudeMacros($textarea.val());
-                    await window.TavernHelper.createChatMessages([{ role: 'assistant', message: txt }], { refresh: 'affected' });
-                    toastr.success("已插入");
-                    tryAutoClose();
-                });
-                
-                // 4. 逻辑修复：等待返回值 + 强制关闭
-                $card.find('.switch').on('click', async () => {
-                    if ($card.hasClass('active')) return;
-                    
-                    const success = await jumpToGreeting(loopIndex, $textarea.val());
-                    if (success) {
-                        toastr.success(`已切换`);
-                        renderList();
-                        tryAutoClose();
-                    }
-                });
 
-                $scrollArea.append($card);
-            });
+                    $expandBar.on('click', () => {
+                        $textarea.toggleClass('expanded');
+                        $expandBar.html($textarea.hasClass('expanded') ? '<i class="fa-solid fa-chevron-up"></i>' : '<i class="fa-solid fa-chevron-down"></i>');
+                    });
+
+                    $card.find('.gj-btn-max').on('click', () => {
+                        if (typeof Swal !== 'undefined') Swal.close();
+                        setTimeout(() => openFullscreenEditor(item.index, item.label), 200);
+                    });
+                    
+                    $card.find('.add').on('click', async () => {
+                        if (!charObj.data.alternate_greetings) charObj.data.alternate_greetings = [];
+                        charObj.data.alternate_greetings.splice(item.index + 1, 0, "");
+                        syncSubtitles(charId, 'add', item.index);
+                        await forceSave(charId); 
+                        renderList(loopIndex + 1); 
+                        toastr.success("已插入");
+                    });
+
+                    if (!item.protected) {
+                        $card.find('.up').on('click', async () => {
+                            const arr = charObj.data.alternate_greetings;
+                            [arr[item.index - 1], arr[item.index]] = [arr[item.index], arr[item.index - 1]];
+                            syncSubtitles(charId, 'move-up', item.index);
+                            await forceSave(charId); renderList(loopIndex - 1);
+                        });
+                        $card.find('.down').on('click', async () => {
+                            const arr = charObj.data.alternate_greetings;
+                            [arr[item.index], arr[item.index + 1]] = [arr[item.index + 1], arr[item.index]];
+                            syncSubtitles(charId, 'move-down', item.index);
+                            await forceSave(charId); renderList(loopIndex + 1);
+                        });
+                        $card.find('.del').on('click', async () => {
+                            const popupFunc = SillyTavern.callGenericPopup || window.callGenericPopup;
+                            if(await popupFunc(`删除 ${item.label}？`, SillyTavern.POPUP_TYPE.CONFIRM)) {
+                                charObj.data.alternate_greetings.splice(item.index, 1);
+                                syncSubtitles(charId, 'delete', item.index);
+                                await forceSave(charId); 
+                                toastr.success("已删除"); 
+                                // Fix 3: 删除后保持原位置，不再乱滚
+                                renderList(-1, true);
+                            }
+                        });
+                    }
+                    $card.find('.insert').on('click', async () => {
+                        const txt = window.TavernHelper.substitudeMacros($textarea.val());
+                        await window.TavernHelper.createChatMessages([{ role: 'assistant', message: txt }], { refresh: 'affected' });
+                        toastr.success("已插入"); tryAutoClose();
+                    });
+                    $card.find('.switch').on('click', async () => {
+                        if ($card.hasClass('active')) return;
+                        if (await jumpToGreeting(loopIndex, $textarea.val())) {
+                            toastr.success(`已切换`); renderList(loopIndex); tryAutoClose();
+                        }
+                    });
+                    $scrollArea.append($card);
+
+                    // 跳转逻辑
+                    if (loopIndex === scrollToIndex && !maintainScroll) {
+                        setTimeout(() => {
+                            $card[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            $card.css('border-color', '#7a9a83'); 
+                            setTimeout(() => $card.css('border-color', ''), 500);
+                        }, 100);
+                    }
+                }
+
+                // Fix 3: 如果是维持滚动模式，在第一批渲染后立即恢复位置
+                if (maintainScroll && start === 0) {
+                     $scrollArea.scrollTop(currentScrollPos);
+                }
+
+                if (start + RENDER_BATCH < total) {
+                    setTimeout(() => renderBatch(start + RENDER_BATCH), 50);
+                }
+            };
+
+            renderBatch(0);
         };
 
         $headerWrapper.find('.add').on('click', async () => {
             const charObj = SillyTavern.characters[charId];
             if (!charObj.data.alternate_greetings) charObj.data.alternate_greetings = [];
             charObj.data.alternate_greetings.push("");
-            const subs = getSubtitles(charObj);
-            if (!subs.alts) subs.alts = [];
-            subs.alts.push("");
-            await forceSave(charId);
-            renderList();
-            setTimeout(() => $scrollArea.scrollTop($scrollArea[0].scrollHeight), 100);
+            const subs = getSubtitles(charObj); if (!subs.alts) subs.alts = []; subs.alts.push("");
+            await forceSave(charId); 
+            const newTotal = 1 + charObj.data.alternate_greetings.length;
+            renderList(newTotal - 1);
         });
 
         $headerWrapper.find('.directory').on('click', () => {
-            if (typeof Swal !== 'undefined') Swal.close();
-            setTimeout(() => openDirectoryTool(charId, () => {
-                setTimeout(showGreetingManager, 300);
-            }), 200);
+            safeClose();
+            setTimeout(() => openDirectoryTool(charId, () => setTimeout(showGreetingManager, 300)), 200);
         });
 
         $headerWrapper.find('.search').on('click', () => {
-            if (typeof Swal !== 'undefined') Swal.close();
+            safeClose();
             setTimeout(() => openSearchAndReplaceLogic(charId), 200);
         });
 
         renderList();
 
         if (window.SillyTavern && SillyTavern.Popup) {
-            mainPopupInstance = new SillyTavern.Popup($wrapper, SillyTavern.POPUP_TYPE.TEXT, "", { large: true, okButton: "关闭" });
+            mainPopupInstance = new SillyTavern.Popup($wrapper, SillyTavern.POPUP_TYPE.TEXT, "", { large: true, okButton: false, cancelButton: false });
             mainPopupInstance.show();
         } else {
-            (SillyTavern.callGenericPopup || window.callGenericPopup)($wrapper, 1, "", { large: true, okButton: "关闭" });
+            (SillyTavern.callGenericPopup || window.callGenericPopup)($wrapper, 1, "", { large: true, okButton: false });
         }
     }
 
