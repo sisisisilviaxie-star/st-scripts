@@ -1,6 +1,6 @@
 //name: 开场白管理器
-//description:V3.0
-//author: Yellows 
+//description: 移动端安全销毁 & 极速防崩 (V3.4 Fixes: Force Save & Stability)
+//author: Yellows (Modified V3.4)
 
 (function() {
     // === 0. 配置常量 ===
@@ -8,7 +8,7 @@
     let saveTimeout = null;
 
     // === 1. 样式 ===
-    const STYLE_ID = 'greeting-jumper-css-v3-3'; 
+    const STYLE_ID = 'greeting-jumper-css-v3-4'; 
     $('[id^=greeting-jumper-css]').remove();
 
     $('head').append(`
@@ -167,7 +167,6 @@
             .gj-fs-btn.replace { color: #e6a23c; border-color: #e6a23c; background: rgba(230,162,60,0.1); }
             .gj-fs-btn.replace:hover { background: #e6a23c; color: white; }
             .gj-fs-textarea-wrapper { flex-grow: 1; position: relative; overflow: hidden; display: flex; }
-            /* V3.2 Fix 4: 增加底部 padding，确保底部搜索内容可视 */
             .gj-fullscreen-textarea { flex-grow: 1; padding: 15px; padding-bottom: 35vh; font-size: 1.1em; line-height: 1.6; background: var(--smart-theme-bg); color: var(--smart-theme-body-color); border: none; outline: none; resize: none; width: 100%; height: 100%; box-sizing: border-box; }
 
             /* 目录导入/导出 */
@@ -231,12 +230,23 @@
         </style>
     `);
 
+    // Fix 1: 真正有效的强制保存逻辑
     async function forceSave(charId) {
         if (saveTimeout) clearTimeout(saveTimeout);
-        if (typeof window.saveCharacterDebounced === 'function') {
-            await window.saveCharacterDebounced();
-        } else if (typeof SillyTavern.saveCharacter === 'function') {
-            await SillyTavern.saveCharacter(Number(charId));
+        try {
+            // 优先使用 SillyTavern.saveCharacter，因为它是直接的异步保存，不是防抖的
+            if (typeof SillyTavern.saveCharacter === 'function') {
+                await SillyTavern.saveCharacter(Number(charId));
+                // 给磁盘一点时间去写
+                await new Promise(r => setTimeout(r, 200)); 
+            } else if (typeof window.saveCharacterDebounced === 'function') {
+                // 如果只有防抖函数，没办法，只能调用它然后死等
+                await window.saveCharacterDebounced();
+                await new Promise(r => setTimeout(r, 2000)); // 等待防抖触发
+            }
+        } catch (e) {
+            console.error("Save failed:", e);
+            toastr.error("保存失败，请检查控制台");
         }
     }
 
@@ -428,14 +438,15 @@ ${scriptClose}
     };
 
     // --- V2.8 核心：移动端安全写入逻辑 ---
+    // Fix 2: 对于单次操作，不使用循环分批，而是原子化处理，减少中间态崩溃
     async function processBatchAndSave(charId, totalItems, processFunction, refreshCallback, myPopup) {
         if (myPopup) myPopup.complete(SillyTavern.POPUP_RESULT.AFFIRMATIVE);
 
         const $progressContent = $(`
             <div class="gj-progress-popup">
                 <div class="gj-spinner"></div>
-                <div class="gj-progress-text">正在写入...</div>
-                <div class="gj-progress-sub">0 / ${totalItems}</div>
+                <div class="gj-progress-text">正在处理...</div>
+                <div class="gj-progress-sub">请勿关闭</div>
             </div>
         `);
         
@@ -445,34 +456,30 @@ ${scriptClose}
             progressPopup.show();
         }
 
-        const BATCH_SIZE = 5; 
-        let processed = 0;
-        const updateProgress = () => { $progressContent.find('.gj-progress-sub').text(`${processed} / ${totalItems}`); };
         const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
         try {
-            await sleep(200); 
-
-            for (let i = 0; i < totalItems; i += BATCH_SIZE) {
-                const end = Math.min(i + BATCH_SIZE, totalItems);
-                processFunction(i, end);
-                processed = end;
-                updateProgress();
-                await sleep(50);
-            }
-
-            $progressContent.find('.gj-progress-text').text("正在保存...");
+            // 步骤 1: 应用修改
             await sleep(100); 
+            // 针对插入/覆盖单次操作，不需要分批，直接执行
+            // totalItems 在这种情况下通常是 1 或 matched.length
+            // 我们直接让 processFunction 把活干完
+            processFunction(0, totalItems);
+
+            // 步骤 2: 强制保存
+            $progressContent.find('.gj-progress-text').text("正在写入磁盘...");
+            await sleep(50); 
             
             await forceSave(charId);
             
+            // 步骤 3: 完成
             $progressContent.find('.gj-progress-text').text("刷新界面...");
-            await sleep(500); 
+            await sleep(200); 
 
-            toastr.success(`成功更新 ${totalItems} 条数据`);
+            toastr.success(`操作完成`);
             if (progressPopup) progressPopup.complete(SillyTavern.POPUP_RESULT.AFFIRMATIVE);
             
-            if (refreshCallback) setTimeout(refreshCallback, 200);
+            if (refreshCallback) setTimeout(refreshCallback, 100);
 
         } catch (err) {
             console.error(err);
@@ -638,33 +645,35 @@ ${scriptClose}
                 }, myPopup);
             });
 
+            // Fix 3: 严格同步标题 (Subtitle Sync)
             $container.find('.insert-as-new-btn').on('click', async (e) => {
                 e.preventDefault();
                 if(!confirm("确定插入新页面？原内容将顺移。")) return;
 
-                isSwitchingView = true; // Fix 1: 立即标记，防止双窗口
+                isSwitchingView = true; 
 
                 await processBatchAndSave(charId, 1, (start, end) => {
                     const oldFirstMes = charObj.first_mes || "";
-                    const subs = getSubtitles(charObj);
-                    const oldFirstSubtitle = subs.first_mes || "";
                     
+                    // 1. 移动内容
                     if (!charObj.data.alternate_greetings) charObj.data.alternate_greetings = [];
                     charObj.data.alternate_greetings.unshift(oldFirstMes);
                     
-                    if (!subs.alts) subs.alts = [];
-                    subs.alts.unshift(oldFirstSubtitle);
+                    // 2. 严格同步标题 (关键步骤)
+                    const subs = getSubtitles(charObj);
+                    const oldFirstSubtitle = subs.first_mes || "";
                     
+                    if (!subs.alts) subs.alts = [];
+                    subs.alts.unshift(oldFirstSubtitle); // 把旧首页标题移到 alts[0]
+                    
+                    // 3. 写入新数据
                     charObj.first_mes = $container.find('.export-area').val();
                     subs.first_mes = "目录页"; 
 
-                    // Fix 2: 修正 Active Box，如果当前查看的是 #0，插入后内容变到了 #1，
-                    // 我们需要将聊天记录的指针也修正到 #1，这样看起来还是原来的内容
+                    // Fix 2: 修正 Active Box
                     const msgZero = SillyTavern.chat[0];
                     if (msgZero && (msgZero.swipe_id === 0 || msgZero.swipe_id === undefined)) {
-                        // 更新内部数据
                         msgZero.swipe_id = 1;
-                        // 更新 Helper 状态 (但不刷新文本，避免闪烁)
                         if (window.TavernHelper) {
                             window.TavernHelper.setChatMessages([{
                                 message_id: 0,
@@ -672,7 +681,6 @@ ${scriptClose}
                             }], { refresh: 'none' });
                         }
                     } else if (msgZero && msgZero.swipe_id > 0) {
-                        // 如果已经在看其他开场白，索引也要+1
                         msgZero.swipe_id += 1;
                         if (window.TavernHelper) {
                             window.TavernHelper.setChatMessages([{
