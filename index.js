@@ -3,7 +3,7 @@ const logicUrl = 'https://cdn.jsdelivr.net/gh/sisisisilviaxie-star/st-scripts@ma
 
 import(logicUrl + '?t=' + Date.now())
     .then(() => {
-        console.log('[开场白管理器] 脚本加载成功 (最新版)');
+        console.log('[开场白管理器] 脚本加载成功 (V3.0)');
     })
     .catch((err) => {
         console.error('[开场白管理器] 脚本加载失败:', err);
