@@ -1,3 +1,4 @@
+
 //name: 开场白管理器
 //description: 移动端安全销毁 & 极速防崩 (V3.4 Fixes: Force Save & Stability)
 //author: Yellows (Modified V3.4)
@@ -620,6 +621,7 @@ ${scriptClose}
                 await processBatchAndSave(charId, 1, (start, end) => {
                     // 1. 更新角色卡数据
                     charObj.first_mes = newText;
+                    if (charObj.data) charObj.data.first_mes = newText;
 
                     // 2. 同步更新聊天记录 (Message #0)
                     if (window.SillyTavern.chat && window.SillyTavern.chat.length > 0) {
@@ -668,6 +670,7 @@ ${scriptClose}
                     
                     // 3. 写入新数据
                     charObj.first_mes = $container.find('.export-area').val();
+                    if (charObj.data) charObj.data.first_mes = charObj.first_mes;
                     subs.first_mes = "目录页"; 
 
                     // Fix 2: 修正 Active Box
@@ -917,8 +920,12 @@ ${scriptClose}
 
         if (result) {
             const finalContent = $textarea.val();
-            if (index === -1) charObj.first_mes = finalContent;
-            else charObj.data.alternate_greetings[index] = finalContent;
+            if (index === -1) {
+                charObj.first_mes = finalContent;
+                if (charObj.data) charObj.data.first_mes = finalContent;
+            } else {
+                charObj.data.alternate_greetings[index] = finalContent;
+            }
 
             let newTitleVal = $titleInput.val();
             let newSub = "";
@@ -982,7 +989,10 @@ ${scriptClose}
                 if (typeof Swal !== 'undefined') Swal.close();
                 
                 await processBatchAndSave(charId, 1, (start, end) => {
-                    if (charObj.first_mes) charObj.first_mes = charObj.first_mes.split(findStr).join(replaceStr);
+                    if (charObj.first_mes) {
+                        charObj.first_mes = charObj.first_mes.split(findStr).join(replaceStr);
+                        if (charObj.data) charObj.data.first_mes = charObj.first_mes;
+                    }
                     if (charObj.data.alternate_greetings) {
                         charObj.data.alternate_greetings = charObj.data.alternate_greetings.map(g => g ? g.split(findStr).join(replaceStr) : g);
                     }
@@ -1003,8 +1013,12 @@ ${scriptClose}
                 $btnReplaceAll.on('click', async () => {
                     const currentContent = (res.index === -1) ? charObj.first_mes : charObj.data.alternate_greetings[res.index];
                     const newContent = currentContent.split(findStr).join(replaceStr);
-                    if (res.index === -1) charObj.first_mes = newContent;
-                    else charObj.data.alternate_greetings[res.index] = newContent;
+                    if (res.index === -1) {
+                        charObj.first_mes = newContent;
+                        if (charObj.data) charObj.data.first_mes = newContent;
+                    } else {
+                        charObj.data.alternate_greetings[res.index] = newContent;
+                    }
                     await forceSave(charId);
                     toastr.success("已替换");
                     $group.slideUp();
@@ -1029,8 +1043,12 @@ ${scriptClose}
                     $btnRep.on('click', async () => {
                         const currentContent = (res.index === -1) ? charObj.first_mes : charObj.data.alternate_greetings[res.index];
                         const newContent = currentContent.replace(findStr, replaceStr);
-                        if (res.index === -1) charObj.first_mes = newContent;
-                        else charObj.data.alternate_greetings[res.index] = newContent;
+                        if (res.index === -1) {
+                            charObj.first_mes = newContent;
+                            if (charObj.data) charObj.data.first_mes = newContent;
+                        } else {
+                            charObj.data.alternate_greetings[res.index] = newContent;
+                        }
                         await forceSave(charId);
                         toastr.success("已替换");
                         $row.slideUp();
@@ -1218,8 +1236,12 @@ ${scriptClose}
                         } else {
                             $toggle.html('<i class="fa-solid fa-pen"></i>');
                             $textarea.prop('readonly', true);
-                            if (item.protected) charObj.first_mes = $textarea.val();
-                            else charObj.data.alternate_greetings[item.index] = $textarea.val();
+                            if (item.protected) {
+                                charObj.first_mes = $textarea.val();
+                                if (charObj.data) charObj.data.first_mes = charObj.first_mes;
+                            } else {
+                                charObj.data.alternate_greetings[item.index] = $textarea.val();
+                            }
                             setSubtitle(charId, item.index, $subInput.val());
                             await forceSave(charId);
                             toastr.success("已保存");
