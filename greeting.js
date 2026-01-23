@@ -781,7 +781,7 @@ ${scriptClose}
             if (enabled) {
                 $headerWrapper.addClass('gj-sorting-active');
                 $headerWrapper.find('.add, .directory, .search').prop('disabled', true).css('opacity', '0.3');
-                toastr.info(isMobile() ? "拖拽模式: 列表无法滑动，请拖动卡片到边缘翻页" : "已进入排序模式，拖拽完成后请点击保存");
+                toastr.info("已进入排序模式，拖拽完成后请点击保存");
             } else {
                 $headerWrapper.removeClass('gj-sorting-active');
                 $headerWrapper.find('.add, .directory, .search').prop('disabled', false).css('opacity', '1');
