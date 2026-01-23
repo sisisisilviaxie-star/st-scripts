@@ -1,12 +1,13 @@
 //name: 开场白管理器
-//description: V6
-//author: Yellows 
+//description: V6.2 
+//author: Yellows
+
 (function() {
     const STORAGE_KEY_AUTO_CLOSE = 'gj_auto_close_setting_v1';
     let saveTimeout = null;
     let isSortingMode = false;
     const TITLE_REGEX = /^<!---title:(.*?)--->[\r\n]*/;
-    const STYLE_ID = 'greeting-jumper-css-v6-1'; 
+    const STYLE_ID = 'greeting-jumper-css-v6-2'; 
 
     $('[id^=greeting-jumper-css]').remove();
     $('head').append(`
@@ -16,19 +17,17 @@
             *:focus { outline: none !important; box-shadow: none !important; }
             .gj-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--smart-theme-bg); position: relative; }
             
-            /* --- Header --- */
             .gj-header-wrapper { flex-shrink: 0; background: var(--smart-theme-content-bg); border-bottom: 1px solid var(--smart-theme-border-color-1); display: flex; flex-direction: column; z-index: 100; }
             .gj-header-row-1 { display: flex; align-items: center; justify-content: flex-end; padding: 12px 15px; border-bottom: 1px solid rgba(0,0,0,0.05); position: relative; min-height: 24px; }
             .gj-header-row-2 { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; gap: 10px; position: relative; }
             
-            /* Sort Buttons */
             .gj-sort-controls { display: flex; gap: 8px; align-items: center; z-index: 101; position: relative; }
             .gj-sort-toggle-btn { font-size: 0.9em; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; border: 1px solid var(--smart-theme-border-color-2); background: transparent; color: var(--smart-theme-body-color); display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
             .gj-sort-toggle-btn:hover { background: rgba(0,0,0,0.05); }
             
-            .gj-sort-save-btn { background: #4caf50; color: white; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; display: none; align-items: center; gap: 6px; pointer-events: auto; }
+            .gj-sort-save-btn { background: #4caf50; color: white; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; display: none; align-items: center; gap: 6px; pointer-events: auto !important; }
             .gj-sort-save-btn:hover { background: #43a047; }
-            .gj-sort-cancel-btn { background: #757575; color: white; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; display: none; align-items: center; gap: 6px; pointer-events: auto; }
+            .gj-sort-cancel-btn { background: #757575; color: white; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; display: none; align-items: center; gap: 6px; pointer-events: auto !important; }
             .gj-sort-cancel-btn:hover { background: #616161; }
             .gj-sorting-active .gj-sort-toggle-btn { display: none; }
             .gj-sorting-active .gj-sort-save-btn, .gj-sorting-active .gj-sort-cancel-btn { display: flex; }
@@ -44,7 +43,6 @@
             .gj-icon-btn { background: transparent; border: none; color: var(--smart-theme-body-color); width: 34px; height: 34px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.6; font-size: 1.1em; transition: all 0.2s; }
             .gj-icon-btn:hover { background: rgba(0,0,0,0.05); opacity: 1; transform: scale(1.1); color: #7a9a83; }
             
-            /* Scroll Area */
             .gj-scroll-area { flex-grow: 1; overflow-y: auto; padding: 10px 8px 10px 8px; scroll-behavior: smooth; position: relative; }
             .gj-sortable-placeholder { border: 2px dashed #4caf50; background: rgba(76, 175, 80, 0.1); border-radius: 6px; margin-bottom: 12px; visibility: visible !important; height: 60px !important; }
             .gj-sortable-helper { opacity: 0.9; box-shadow: 0 15px 30px rgba(0,0,0,0.3); z-index: 10000 !important; cursor: grabbing !important; transform: scale(1.01); }
@@ -52,14 +50,23 @@
             .gj-main-close-btn { width: 100%; max-width: 400px; padding: 10px; border: 1px solid var(--smart-theme-border-color-2); background: transparent; color: var(--smart-theme-body-color); border-radius: 6px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
             .gj-main-close-btn:hover { background: rgba(0,0,0,0.05); border-color: var(--smart-theme-border-color-1); }
             
-            /* Card */
             .gj-card { background: var(--smart-theme-content-bg); border: 1px solid var(--smart-theme-border-color-1); border-radius: 6px; margin-bottom: 12px; display: flex; flex-direction: column; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s; }
             .gj-card.active { background: rgba(122, 154, 131, 0.05) !important; border-left: 4px solid #7a9a83; }
             .gj-card.sorting-enabled .gj-card-body, .gj-card.sorting-enabled .gj-card-header-tools { display: none !important; }
             .gj-card.sorting-enabled .gj-header-right { display: none; }
-            .gj-card.sorting-enabled .gj-card-header-main { cursor: grab; background: rgba(0,0,0,0.02); border-bottom: none; padding: 15px 10px; border: 1px dashed rgba(0,0,0,0.1); }
+            
+            /* 关键修复: 移动端禁止原生滚动，强制响应拖拽 */
+            .gj-card.sorting-enabled .gj-card-header-main { 
+                cursor: grab; 
+                background: rgba(0,0,0,0.02); 
+                border-bottom: none; 
+                padding: 15px 10px; 
+                border: 1px dashed rgba(0,0,0,0.1); 
+                touch-action: none !important; /* 核心：禁止浏览器处理触摸滚动 */
+            }
             .gj-card.sorting-enabled .gj-card-header-main:hover { background: rgba(0,0,0,0.05); }
             .gj-card.sorting-enabled .gj-card-header-main:active { cursor: grabbing; background: rgba(76, 175, 80, 0.1); border-color: #4caf50; }
+            
             .gj-card-header-main { display: flex; align-items: flex-start; padding: 10px; gap: 10px; min-height: 30px; }
             .gj-card.editing .gj-card-header-main { border-bottom: 1px solid var(--smart-theme-border-color-1); background: rgba(0,0,0,0.02); }
             .gj-btn-max { color: var(--smart-theme-body-color); opacity: 0.4; cursor: pointer; background: transparent; border: none; padding: 2px; font-size: 0.9em; flex-shrink: 0; margin-top: 3px; }
@@ -96,7 +103,6 @@
             .gj-footer-btn.switch:hover { border-color: #7a9a83; color: #7a9a83; background: rgba(122, 154, 131, 0.05); }
             .gj-footer-btn.active { background: #7a9a83; color: white; border: none; cursor: default; opacity: 1; pointer-events: none; }
             
-            /* Fullscreen */
             .gj-fullscreen-editor { display: flex; flex-direction: column; height: 100%; width: 100%; background: var(--smart-theme-bg); position: relative; }
             .gj-fs-header { padding: 8px 12px; background: var(--smart-theme-content-bg); border-bottom: 1px solid var(--smart-theme-border-color-1); display: flex; flex-direction: column; gap: 6px; transition: all 0.2s; flex-shrink: 0; }
             .gj-fs-header.collapsed .gj-fs-tools-container { display: none; }
@@ -115,7 +121,6 @@
             .gj-fs-textarea-wrapper { flex-grow: 1; position: relative; overflow: hidden; display: flex; }
             .gj-fullscreen-textarea { flex-grow: 1; padding: 15px; padding-bottom: 35vh; font-size: 1.1em; line-height: 1.6; background: var(--smart-theme-bg); color: var(--smart-theme-body-color); border: none; outline: none; resize: none; width: 100%; height: 100%; box-sizing: border-box; }
             
-            /* Directory */
             .gj-parse-container { display: flex; flex-direction: column; height: 100%; min-height: 400px; text-align: left; padding-bottom: 10px; box-sizing: border-box; }
             .gj-tabs-header { display: flex; border-bottom: 1px solid var(--smart-theme-border-color-1); margin-bottom: 10px; flex-shrink: 0; }
             .gj-tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; font-weight: bold; opacity: 0.7; border-bottom: 3px solid transparent; transition: all 0.2s; }
@@ -155,7 +160,6 @@
             .gj-progress-text { font-size: 1.2em; font-weight: bold; color: var(--smart-theme-body-color); }
             .gj-progress-sub { font-size: 0.9em; opacity: 0.7; color: var(--smart-theme-body-color); }
             
-            /* Search Results */
             .gj-search-results-container { padding-bottom: 120px; max-height: 80vh !important; overflow-y: auto; }
             .gj-search-top-bar { padding: 0 5px 8px 5px; border-bottom: 1px solid var(--smart-theme-border-color-1); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px; }
             .gj-search-group { margin-bottom: 8px; border: 1px solid var(--smart-theme-border-color-1); border-radius: 4px; overflow: hidden; }
@@ -171,6 +175,11 @@
             .gj-search-btn.replace { color: #e6a23c; border-color: #e6a23c; }
         </style>
     `);
+
+    // --- 辅助功能 ---
+    function isMobile() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
 
     function parseMessageContent(raw) {
         if (!raw) return { title: "", body: "" };
@@ -203,38 +212,58 @@
         if ($nativeInput.length) $nativeInput.val(newText).trigger('input').trigger('change');
     }
 
-    // 2. PC端滚动优化 (1/3处)
-    function smartScrollToCursor($textarea, pos) {
+    // --- 滚动逻辑核心 (双轨制) ---
+    
+    // 方案 A: PC端行高估算
+    function scrollToCursorPC($textarea, pos) {
         if (!$textarea || $textarea.length === 0) return;
         const textarea = $textarea[0];
         const val = textarea.value;
         const textBefore = val.substring(0, pos);
         const lines = textBefore.split("\n").length;
-        const lineHeight = 24; 
+        const lineHeight = 24; // 估算行高
         const containerHeight = textarea.clientHeight;
         const targetScroll = Math.max(0, lines * lineHeight - (containerHeight * 0.33));
         textarea.scrollTop = targetScroll;
     }
 
-    // 3. 剪贴板安全降级
-    const safeCopy = (text) => {
-        const fallback = () => {
-            const ta = document.createElement("textarea");
-            ta.value = text;
-            ta.style.position = "fixed"; ta.style.left = "-9999px";
-            document.body.appendChild(ta);
-            ta.focus(); ta.select();
-            try { document.execCommand('copy'); toastr.success("已复制"); } 
-            catch (e) { toastr.error("复制失败"); }
-            document.body.removeChild(ta);
-        };
+    // 方案 B: 移动端镜像模拟 (Pixel-Perfect)
+    function scrollToCursorMobile($textarea, pos) {
+        if (!$textarea || $textarea.length === 0) return;
+        const textarea = $textarea[0];
+        const div = document.createElement('div');
+        const computed = window.getComputedStyle(textarea);
         
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(() => toastr.success("已复制")).catch(() => fallback());
-        } else {
-            fallback();
-        }
-    };
+        const stylesToCopy = [
+            'font-family', 'font-size', 'font-weight', 'font-style', 'letter-spacing', 'line-height',
+            'text-transform', 'word-spacing', 'text-indent', 'white-space', 'word-wrap', 'word-break',
+            'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+            'border-width', 'box-sizing', 'width'
+        ];
+        
+        stylesToCopy.forEach(prop => div.style[prop] = computed[prop]);
+        
+        div.style.position = 'absolute'; 
+        div.style.visibility = 'hidden'; 
+        div.style.top = '0'; 
+        div.style.left = '-9999px'; 
+        div.style.overflow = 'hidden'; 
+        div.style.height = 'auto';
+        
+        div.textContent = textarea.value.substring(0, pos);
+        const span = document.createElement('span'); 
+        span.textContent = '|'; 
+        div.appendChild(span);
+        document.body.appendChild(div);
+        
+        const cursorTop = span.offsetTop + parseInt(computed['paddingTop']);
+        
+        // 移动端策略: 尽量靠上，避免被软键盘遮挡
+        const targetScroll = Math.max(0, cursorTop - 60);
+        
+        textarea.scrollTop = targetScroll;
+        document.body.removeChild(div);
+    }
 
     const generateRegexJson = (format) => {
         const scriptOpen = "<" + "script>"; const scriptClose = "<" + "/script>";
@@ -314,7 +343,16 @@ ${scriptClose}
             });
             $container.find('.clear-btn').on('click', (e) => { e.preventDefault(); $container.find('.import-area').val('').focus(); });
             
-            $container.find('.copy-btn').on('click', (e) => { e.preventDefault(); safeCopy($container.find('.export-area').val()); });
+            $container.find('.copy-btn').on('click', (e) => { 
+                e.preventDefault(); 
+                const text = $container.find('.export-area').val();
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(() => toastr.success("已复制"));
+                } else {
+                    const textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; textArea.style.left = "-9999px";
+                    document.body.appendChild(textArea); textArea.select(); try { document.execCommand('copy'); toastr.success("已复制"); } catch (err) { toastr.error("复制失败"); } document.body.removeChild(textArea);
+                }
+            });
 
             $container.find('.import-area').on('input', function() { importText = $(this).val(); });
             $container.find('.gj-dl-btn').on('click', (e) => { e.preventDefault(); downloadRegex(currentFormat); });
@@ -391,7 +429,6 @@ ${scriptClose}
         openTabsUI();
     }
 
-    // 1.2 & 1.3 - 全屏编辑器 (接收 specificOccurrenceIndex)
     async function openFullscreenEditor(index, label, initialFindStr = "", initialReplaceStr = "", specificOccurrenceIndex = -1) {
         const charId = SillyTavern.characterId; const charObj = SillyTavern.characters[charId];
         const rawContent = (index === -1) ? charObj.first_mes : charObj.data.alternate_greetings[index];
@@ -418,6 +455,15 @@ ${scriptClose}
             $toggleBtn.html($header.hasClass('collapsed') ? '<i class="fa-solid fa-chevron-down"></i>' : '<i class="fa-solid fa-chevron-up"></i>');
         });
 
+        // 核心修改: 双轨制滚动
+        const performScroll = (pos) => {
+            if (isMobile()) {
+                scrollToCursorMobile($textarea, pos);
+            } else {
+                scrollToCursorPC($textarea, pos);
+            }
+        };
+
         const doFind = (direction) => {
             const val = $textarea.val(); const term = $inputFind.val(); if (!term) return;
             let startPos = $textarea[0].selectionEnd; if (direction === 'prev') startPos = $textarea[0].selectionStart;
@@ -426,8 +472,7 @@ ${scriptClose}
             if (nextPos !== -1) { 
                 $textarea.focus(); 
                 $textarea[0].setSelectionRange(nextPos, nextPos + term.length); 
-                // 调用 V2 滚动逻辑
-                smartScrollToCursor($textarea, nextPos); 
+                performScroll(nextPos);
             } else toastr.warning("未找到");
         };
 
@@ -438,7 +483,6 @@ ${scriptClose}
         const doReplaceAll = () => { const term = $inputFind.val(); const rep = $inputReplace.val(); if (!term) return; const val = $textarea.val(); const newVal = val.split(term).join(rep); if (val !== newVal) { $textarea.val(newVal); toastr.success("已替换"); } };
         $container.find('.btn-next').on('click', () => doFind('next')); $container.find('.btn-prev').on('click', () => doFind('prev')); $container.find('.btn-replace').on('click', doReplace); $container.find('.btn-replace-all').on('click', doReplaceAll);
         
-        // 1.2: 精准跳转处理 (基于第 N 次出现)
         if (specificOccurrenceIndex !== -1 && initialFindStr) {
             setTimeout(() => {
                 const val = $textarea.val();
@@ -449,7 +493,7 @@ ${scriptClose}
                     if (count === specificOccurrenceIndex) {
                         $textarea.focus();
                         $textarea[0].setSelectionRange(pos, pos + initialFindStr.length);
-                        smartScrollToCursor($textarea, pos);
+                        performScroll(pos);
                         found = true;
                         break;
                     }
@@ -480,14 +524,13 @@ ${scriptClose}
 
         const charObj = SillyTavern.characters[charId]; let results = [];
         
-        // 1.1: 搜索逻辑改为：仅搜索正文 (去除隐藏标题)，并记录 occurrenceIndex
         const checkContent = (rawContent, index, label) => { 
             if (!rawContent) return; 
             const parsed = parseMessageContent(rawContent);
-            const contentBody = parsed.body; // 只在正文中查找
+            const contentBody = parsed.body; 
             
-            let indices = []; // 记录字符位置
-            let occurrenceIndices = []; // 记录是第几次出现
+            let indices = []; 
+            let occurrenceIndices = []; 
             let pos = contentBody.indexOf(findStr);
             let count = 0;
             
@@ -510,7 +553,6 @@ ${scriptClose}
         if(hasReplace) $resultContainer.find('.replace-all-global').on('click', async () => {
             if(!confirm(`确定全部替换？`)) return; if (typeof Swal !== 'undefined') Swal.close();
             await processBatchAndSave(charId, 1, (start, end) => {
-                // 全局替换时，需要小心隐藏标题，所以我们重新构建
                 const doReplace = (raw) => {
                     const p = parseMessageContent(raw);
                     const newBody = p.body.split(findStr).join(replaceStr);
@@ -542,7 +584,7 @@ ${scriptClose}
             }
 
             res.indices.forEach((idx, i) => {
-                const occurIdx = res.occurrenceIndices[i]; // 获取这是第几次出现
+                const occurIdx = res.occurrenceIndices[i]; 
                 
                 const s = Math.max(0, idx - 20); const e = Math.min(res.content.length, idx + findStr.length + 20);
                 const txt = _.escape(res.content.substring(s, e)).replace(new RegExp(_.escape(findStr), 'g'), `<span class="gj-highlight">${_.escape(findStr)}</span>`);
@@ -554,14 +596,11 @@ ${scriptClose}
                         const currentRaw = (res.index === -1) ? charObj.first_mes : charObj.data.alternate_greetings[res.index];
                         const p = parseMessageContent(currentRaw);
                         
-                        // 仅替换第 N 次出现
                         let count = 0;
                         let pos = p.body.indexOf(findStr);
-                        let bodyArr = p.body.split('');
                         
                         while (pos !== -1) {
                             if (count === occurIdx) {
-                                // 找到位置，替换
                                 const pre = p.body.substring(0, pos);
                                 const post = p.body.substring(pos + findStr.length);
                                 const newBody = pre + replaceStr + post;
@@ -582,7 +621,6 @@ ${scriptClose}
                 const $btnJump = $(`<button class="gj-search-btn edit">跳转</button>`);
                 $btnJump.on('click', () => { 
                     if (typeof Swal !== 'undefined') Swal.close(); 
-                    // 传递 occurIdx 
                     setTimeout(() => openFullscreenEditor(res.index, res.label, findStr, replaceStr, occurIdx), 200); 
                 });
                 $row.find('.gj-search-actions').append($btnJump);
@@ -698,13 +736,16 @@ ${scriptClose}
                 }
                 $scrollArea.append(fragment); bindTasks.forEach(task => task());
                 
+                // 核心修改: 分端 Sortable 配置
+                const isMob = isMobile();
                 $scrollArea.sortable({
                     handle: '.gj-card-header-main', axis: 'y', opacity: 0.95, helper: 'clone', appendTo: document.body, placeholder: 'gj-sortable-placeholder',
                     forcePlaceholderSize: true, zIndex: 10000, 
-                    delay: 200, 
+                    // PC vs Mobile 差异化配置
+                    delay: isMob ? 250 : 100, // 移动端需要更长延时以区分点击
                     scroll: true, 
-                    scrollSpeed: 20, 
-                    scrollSensitivity: 80,
+                    scrollSpeed: isMob ? 40 : 20, // 移动端翻页加速
+                    scrollSensitivity: isMob ? 60 : 80, // 移动端减小感应区防止重叠
                     tolerance: "pointer", distance: 5,
                     start: function(event, ui) { ui.placeholder.height(Math.max(60, ui.item.height())); ui.helper.width(ui.item.width()); }
                 });
@@ -740,7 +781,7 @@ ${scriptClose}
             if (enabled) {
                 $headerWrapper.addClass('gj-sorting-active');
                 $headerWrapper.find('.add, .directory, .search').prop('disabled', true).css('opacity', '0.3');
-                toastr.info("已进入排序模式，拖拽完成后请点击保存");
+                toastr.info(isMobile() ? "拖拽模式: 列表无法滑动，请拖动卡片到边缘翻页" : "已进入排序模式，拖拽完成后请点击保存");
             } else {
                 $headerWrapper.removeClass('gj-sorting-active');
                 $headerWrapper.find('.add, .directory, .search').prop('disabled', false).css('opacity', '1');
